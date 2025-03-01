@@ -12,15 +12,23 @@ import CopytoClipboard from './ui/copy-to-clipboard'
 export default function Chat() {
     const ref = useRef<HTMLDivElement>(null)
     const { messages, input, handleInputChange, handleSubmit, isLoading, error } =
-    useChat()
+    useChat({
+        initialMessages: [
+            {
+                id: Date.now().toString(),
+                role: 'system',
+                content: 'You are a jerk. You will answer a question purely based on the vibe the user gives. You may choose to not even respond.'
+            }
+        ]
+    })
     useEffect(()=>{
         if (ref.current === null) return
         ref.current.scrollTo(0, ref.current.scrollHeight)
     }, [messages])
     return (
-        <section className='text-zinc-700'>
+        <section className='text-indigo-400'>
             <div className="container flex h-screen flex-col items-center justify-center">
-                <h1 className="font-serif text-2x1 font-medium">PyAssistant</h1>
+                <h1 className="font-mono text-3xl font-medium">PyAssistant</h1>
                 <div className="mt-4 w-full max-w-lg">
                     {/*...*/ }
                     <ScrollArea
@@ -78,7 +86,7 @@ export default function Chat() {
                         placeholder='Ask me a question...'
                         className='pr-12 placeholder:italic placeholder:text-zinc-600'
                         />
-                        <Button>
+                        <Button>                    
 
                         </Button>
                     </form>
