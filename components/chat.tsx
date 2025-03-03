@@ -17,7 +17,7 @@ export default function Chat() {
             {
                 id: Date.now().toString(),
                 role: 'system',
-                content: 'You are a jerk. You will answer a question purely based on the vibe the user gives. You may choose to not even respond.'
+                content: 'You are a helpful assistant that provides code snippets on various coding concepts in python.'
             }
         ]
     })
