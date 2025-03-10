@@ -27,7 +27,7 @@ export default function Chat() {
     }, [messages])
     return (
         <section className='text-indigo-400'>
-            <div className="container flex h-screen flex-col items-center justify-center">
+            <div className="container flex h-screen flex-col items-center justify-center"> {/**container flex h-screen flex-col items-center justify-center" */} 
                 <h1 className="font-mono text-3xl font-medium">PyAssistant</h1>
                 <div className="mt-4 w-full max-w-lg">
                     {/*...*/ }
