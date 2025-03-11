@@ -15,19 +15,24 @@ export default function Home() {
 
   useEffect(() => {
     if (editorRef.current) {
+
+      
+
       // Create a new EditorView instance with a Python language extension and the Tokyo Night theme
       const view = new EditorView({
-        doc: "# Write your Python code here\nprint('Hello, world!')",
+        doc: "def solve():\n  pass",
         extensions: [
           basicSetup,
           python(),
+          
           keymap.of([indentWithTab]),
           tokyoNightInit(), // any necessary initialization for the theme
           tokyoNight,      // the actual theme styles
+          
         ],
         parent: editorRef.current,
       })
-      // Optionally, store the view instance if needed later.
+      // TODO: fix editor scroll
     }
   }, [])
 

@@ -18,6 +18,13 @@ export default function Chat() {
                 id: Date.now().toString(),
                 role: 'system',
                 content: 'You are a helpful assistant that provides code snippets on various coding concepts in python.'
+            },
+            {
+                id: 'welcome message',
+                role: 'assistant',
+                content: "Hi, I'm ChatGPT trained to answer you coding questions. Ask away my friend."
+
+
             }
         ]
     })
@@ -26,13 +33,13 @@ export default function Chat() {
         ref.current.scrollTo(0, ref.current.scrollHeight)
     }, [messages])
     return (
-        <section className='text-indigo-400'>
-            <div className="container flex h-screen flex-col items-center justify-center"> {/**container flex h-screen flex-col items-center justify-center" */} 
-                <h1 className="font-mono text-3xl font-medium">PyAssistant</h1>
+        <section className='text-indigo-600'>
+            <div className="container flex h-screen flex-col items-center justify-center"> {/** */} 
+                <h1 className="font-mono text-3xl font-medium"></h1>
                 <div className="mt-4 w-full max-w-lg">
                     {/*...*/ }
                     <ScrollArea
-                        className='mb-2 h-[400px] rounded-md border p-4'
+                        className='mb-2 h-[400px] rounded-md border border-gray-300 p-4'
                         ref={ref}
                         >
                             {error && (
@@ -48,7 +55,7 @@ export default function Chat() {
                                             </Avatar>
                                             <div className='mt-1.5'>
                                                 <p className='font-semibold'>You</p>
-                                                <div className='mt-1.5 text-sm text-zinc-500'>
+                                                <div className='mt-1.5 text-sm text-white'>
                                                     {m.content}
                                                 </div>
                                             </div>
@@ -68,7 +75,7 @@ export default function Chat() {
                                                     <p className='font-semibold'>Bot</p>
                                                     <CopytoClipboard message={m} className='-mt-1' />
                                                     </div>
-                                                    <div className='mt-2 text-sm text-zinc-500'>
+                                                    <div className='mt-2 text-sm text-white'>
                                                         {m.content}
                                                     </div>
                                                 </div>
@@ -83,12 +90,10 @@ export default function Chat() {
                         <Input
                         value={input}
                         onChange={handleInputChange}
-                        placeholder='Ask me a question...'
-                        className='pr-12 placeholder:italic placeholder:text-zinc-600'
+                        placeholder='Type your message...'
+                        className='border border-gray-300 focus:border-indigo-600 pr-12 placeholder:italic placeholder:text-zinc-600'
                         />
-                        <Button>                    
-
-                        </Button>
+                        
                     </form>
 
                 </div>
