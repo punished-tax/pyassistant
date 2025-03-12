@@ -22,7 +22,7 @@ export default function Chat() {
             {
                 id: 'welcome message',
                 role: 'assistant',
-                content: "Hi, I'm ChatGPT trained to answer you coding questions. Ask away my friend."
+                content: "Hi, I'm ChatGPT trained to answer your coding questions. Ask away my friend."
 
 
             }

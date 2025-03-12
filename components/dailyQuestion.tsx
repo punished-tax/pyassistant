@@ -1,40 +1,21 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
-interface QuestionData {
-  choices?: string[];
-  explanation?: string;
-  // ...other fields based on ChatGPT's response structure
-}
-
-export default function DailyQuestion() {
+const DailyQuestion: React.FC = () => {
   const [question, setQuestion] = useState<string>('');
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    async function fetchQuestion() {
-      try {
-        const res = await fetch('/api/getPythonQuestion');
-        const data = await res.json();
-        // Parse and extract question from the API response:
-        const content = data.choices?.[0]?.message?.content || "No question available.";
-        setQuestion(content);
-      } catch (err) {
-        setError("Failed to load question.");
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchQuestion();
+    fetch('/api/daily-question')
+      .then((res) => res.json())
+      .then((data) => setQuestion(data.question))
+      .catch((err) => console.error('Error fetching question:', err));
   }, []);
 
-  if (loading) return <p>Loading...</p>;
-  if (error) return <p>{error}</p>;
-
   return (
-    <div>
-      <h1>Daily Python Question</h1>
-      <p>{question}</p>
+    <div className="p-4 border rounded mb-4 w-full max-w-[600px]">
+      <h2 className="text-xl font-bold mb-2">Today's Python Challenge</h2>
+      <p>{question || 'Loading question...'}</p>
     </div>
   );
-}
+};
+
+export default DailyQuestion;
