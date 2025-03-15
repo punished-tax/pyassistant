@@ -32,11 +32,12 @@ export default function Home() {
   useEffect(() => {
     if (editorRef.current) {
 
-      
+      const emptyLines = '\n'.repeat(14);
+      const docContent = `def solve():
+  pass${emptyLines}`;
 
-      // Create a new EditorView instance with a Python language extension and the Tokyo Night theme
       const view = new EditorView({
-        doc: "def solve():\n  pass",
+        doc: docContent,
         extensions: [
           basicSetup,
           python(),
@@ -44,11 +45,10 @@ export default function Home() {
           keymap.of([indentWithTab]),
           tokyoNightInit(), // any necessary initialization for the theme
           tokyoNight,      // the actual theme styles
-          
         ],
         parent: editorRef.current,
-      })
-      // TODO: fix editor scroll
+});
+      
     }
   }, [])
 
@@ -61,9 +61,9 @@ export default function Home() {
         <Chat />
       </div>
       <div
-        ref={editorRef}
-        className="border border-gray-300 h-[300px] w-[600px]"
-      />
+      ref={editorRef}
+      className="border border-gray-500 h-[300px] w-[600px] overflow-auto mb-4"
+/>
     </div>
     </>
   )

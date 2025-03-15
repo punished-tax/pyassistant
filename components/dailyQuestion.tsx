@@ -11,7 +11,7 @@ const DailyQuestion: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-4 border rounded mb-4 w-full max-w-[600px]">
+    <div className="p-4 rounded mb-4 w-full max-w-[600px]"> 
       <h2 className="text-xl font-bold mb-2">Today's Python Challenge</h2>
       <p>{question || 'Loading question...'}</p>
     </div>
