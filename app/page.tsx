@@ -9,20 +9,44 @@ import { indentWithTab } from '@codemirror/commands'
 import { keymap } from '@codemirror/view'
 import React from 'react';
 import DailyQuestion from '@/components/dailyQuestion'
+import {
+  Dialog,
+  DialogContent,
+  DialogTrigger,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { BadgeHelp, Play } from 'lucide-react'
 
 
-// Header component with a black background, white border, and centered bold text
+// Header 
 const Header: React.FC<{ title: string }> = ({ title }) => {
   return (
-    <header className="bg-black border-b border-gray-500 py-4 ">
-      <div className="container mx-auto">
+    <header className="relative bg-black border-b border-gray-500 py-4">
+      <div className="container mx-auto relative">
         <h1 className="text-white text-center text-3xl font-bold">
           {title}
         </h1>
+        {/* Dialog positioned in the top right */}
+        <div className="absolute top-2 right-0">
+          <Dialog>
+            <DialogTrigger className="flex items-center gap-2 text-white hover:underline focus:outline-none">
+              <span>About</span>
+              <BadgeHelp size={25} />
+            </DialogTrigger>
+            <DialogContent className="bg-black p-6 rounded-md">
+              <DialogHeader>
+                <DialogTitle className=''>About</DialogTitle>
+              </DialogHeader>
+              
+              <p>This is some information about the website.</p>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
     </header>
-  );
-};
+  )
+}
 
 export const runtime = 'edge'
 
@@ -54,7 +78,7 @@ export default function Home() {
 
   return (
   <>
-    <Header title="PyAssistant" />
+    <Header title="PyAssistant"/>
     <DailyQuestion />
     <div className="flex justify-center items-center min-h-screen space-x-6">
       <div className="flex-shrink-0 w-[600px]">
@@ -64,6 +88,7 @@ export default function Home() {
       ref={editorRef}
       className="border border-gray-500 h-[300px] w-[600px] overflow-auto mb-4"
 />
+    
     </div>
     </>
   )
