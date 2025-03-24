@@ -8,7 +8,7 @@ import { tokyoNight, tokyoNightInit } from '@uiw/codemirror-theme-tokyo-night'
 import { indentWithTab } from '@codemirror/commands'
 import { keymap } from '@codemirror/view'
 import React from 'react';
-import DailyQuestion from '@/components/dailyQuestion'
+import QuestionDisplay from '@/components/QuestionDisplay'
 import {
   Dialog,
   DialogContent,
@@ -79,7 +79,7 @@ export default function Home() {
   return (
   <>
     <Header title="PyAssistant"/>
-    <DailyQuestion />
+    <QuestionDisplay />
     <div className="flex justify-center items-center min-h-screen space-x-6">
       <div className="flex-shrink-0 w-[600px]">
         <Chat />
