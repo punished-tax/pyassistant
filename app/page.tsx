@@ -56,7 +56,7 @@ export default function Home() {
   useEffect(() => {
     if (editorRef.current) {
 
-      const emptyLines = '\n'.repeat(14);
+      const emptyLines = '\n'.repeat(20);
       const docContent = `def solve():
   pass${emptyLines}`;
 
@@ -80,16 +80,17 @@ export default function Home() {
   <>
     <Header title="PyAssistant"/>
     <QuestionDisplay />
-    <div className="flex justify-center items-center min-h-screen space-x-6">
-      <div className="flex-shrink-0 w-[600px]">
-        <Chat />
-      </div>
+    <div className="flex justify-center items-center min-h-screen space-x-5">
       <div
       ref={editorRef}
-      className="border border-gray-500 h-[300px] w-[600px] overflow-auto mb-4"
+      className="border border-gray-500 h-[400px] w-[500px] overflow-auto mb-4"
 />
+<div className="flex-shrink-0 w-[600px]">
+        <Chat />
+      </div>
     
     </div>
+    
     </>
   )
   

@@ -17,7 +17,7 @@ export default function Chat() {
             {
                 id: Date.now().toString(),
                 role: 'system',
-                content: 'You are a helpful assistant that provides code snippets on various coding concepts in python.'
+                content: 'You are a helpful assistant that provides code snippets on various coding concepts in python. You will never provide a full answer to a question. Instead, You will only help with specific syntax that is required for the question.  '
             },
             {
                 id: 'welcome message',

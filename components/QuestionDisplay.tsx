@@ -26,9 +26,10 @@ export default function QuestionDisplay() {
 
   if (loading) return <div className="text-white">Loading today's question...</div>;
   if (!question) return <div className="text-white">Failed to load question</div>;
+  //TODO: Center loading div
 
   return (
-    <div className="bg-gray-800 p-6 rounded-lg text-white">
+    <div className="max-w-2xl mx-auto bg-[rgb(34,34,34)] p-6 rounded-lg text-white">
       <h2 className="text-xl font-bold mb-4">Today's Python Challenge</h2>
       <div className="mb-4">
         <p className="whitespace-pre-line">{question.question}</p>
@@ -53,6 +54,9 @@ export default function QuestionDisplay() {
           <p className="whitespace-pre-line">{question.explanation}</p>
         </div>
       </details>
+      
     </div>
+    
   );
+  
 }

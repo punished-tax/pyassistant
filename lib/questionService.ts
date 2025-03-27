@@ -1,5 +1,7 @@
-"use server";
 // lib/questionService.ts
+"use server";
+
+import { Output } from 'ai';
 import OpenAI from 'openai';
 
 const openai = new OpenAI({
@@ -8,7 +10,10 @@ const openai = new OpenAI({
 
 interface DailyQuestion {
   question: string;
-  example: string;
+  example: { 
+    input: string; 
+    output: string
+  }; 
   solution: string;
   explanation: string;
 }
