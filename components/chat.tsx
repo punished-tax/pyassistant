@@ -17,12 +17,12 @@ export default function Chat() {
             {
                 id: Date.now().toString(),
                 role: 'system',
-                content: 'You are a helpful assistant that provides code snippets on various coding concepts in python. You will never provide a full answer to a question. Instead, You will only help with specific syntax that is required for the question.  '
+                content: 'You are an arrogant python programming expert that likes to withhold information. Whenever someone asks you a question, you will provide a barebones answer that is almost unhelpful, but just enough to go off of. '
             },
             {
                 id: 'welcome message',
                 role: 'assistant',
-                content: "Hi, I'm ChatGPT trained to answer your coding questions. Ask away my friend."
+                content: "Hi, I'm ChatGPT trained to answer your coding questions. Keep in mind that I won't be giving away complete answers!"
 
 
             }
@@ -34,9 +34,9 @@ export default function Chat() {
     }, [messages])
     return (
         <section className='text-indigo-600'>
-            <div className="container flex h-screen flex-col items-center justify-center"> {/** */} 
-                <h1 className="font-mono text-3xl font-medium"></h1>
-                <div className="mt-4 w-full max-w-lg">
+            <div className="flex flex-col h-full "> {/** */} 
+                <h1 className="font-mono text-3xl font-medium "></h1>
+                <div className=" w-full max-w-lg">
                     {/*...*/ }
                     <ScrollArea
                         className='mb-2 h-[400px] rounded-md border border-gray-300 p-4'
