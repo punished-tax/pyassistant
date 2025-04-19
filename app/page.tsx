@@ -47,29 +47,29 @@ async function TodaysChallenge() {
   }
 
   return (
-    <div className="space-y-3 max-w-2xl ml-44">
+    <div className=" max-w-2xl ml-44">
       {/* Question Section */}
       <section className="p-4 border-none bg-[rgb(34,34,34)] dark:bg-gray-800">
-        <h2 className='text-2xl md:text-3xl font-bold mb-4 text-gray-200'>Today's Challenge:</h2>
-        <h2 className="text-xl font-bold mb-3 text-gray-400 dark:text-gray-400">Question title</h2>
-        <div className="prose dark:prose-invert max-w-none text-gray-300 dark:text-gray-300">
+        <h2 className='text-2xl md:text-3xl font-bold mb-4 text-gray-200'></h2>
+        <h2 className="text-2xl font-bold mb-3 text-gray-200 dark:text-gray-400">{challengeData.questionTitle}</h2>
+        <div className="prose dark:prose-invert max-w-none text-gray-200 dark:text-gray-300">
           <p>{challengeData.question}</p>
         </div>
       </section>
 
       {/* Input/Output Example Section */}
-      <section className="p-4 border-none bg-gray-700 dark:bg-gray-800">
+      <section className="p-4 border-none bg-[rgb(34,34,34)] dark:bg-gray-800">
         <h2 className="text-xl font-semibold mb-3 text-gray-100 dark:text-gray-200">Example:</h2>
         <div className="space-y-2">
           <div>
             <h3 className="font-medium mb-1 text-gray-100 dark:text-gray-300">Input:</h3>
-            <pre className="bg-gray-600 dark:bg-gray-700 p-2 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
+            <pre className="bg-gray-500 p-2 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
               <code>{challengeData.inputOutput.input}</code>
             </pre>
           </div>
           <div>
             <h3 className="font-medium mb-1 text-gray-100 dark:text-gray-300">Output:</h3>
-             <pre className="bg-gray-600 dark:bg-gray-700 p-2 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
+             <pre className="bg-gray-500 p-2 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
                <code>{challengeData.inputOutput.output}</code>
             </pre>
           </div>
@@ -99,11 +99,11 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
               <span>About</span>
               <BadgeHelp size={25} />
             </DialogTrigger>
-            <DialogContent className="bg-black p-6 rounded-md">
+            <DialogContent className="bg-[rgb(34,34,34)] p-6 rounded-md">
               <DialogHeader>
                 <DialogTitle>About</DialogTitle>
               </DialogHeader>
-              <p>Practice your coding knowledge and take on daily python challenges! This website is in the spirit of Leetcode and has curated questions from Chatgpt, as well as a chatbot to help you with specific syntax. </p>
+              <p>Practice your coding knowledge and take on daily python challenges! This website is in the spirit of Wordle and has curated questions from ChatGPT, as well as a chatbot to help you get a headstart in solving problems. </p>
             </DialogContent>
           </Dialog>
         </div>
@@ -116,15 +116,43 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
 function LoadingTodaysChallenge() {
   const today = getTodayDateString();
   return (
-    <div className="p-6 border rounded-lg shadow-md bg-gray-800 animate-pulse">
-      <h2 className="text-2xl font-semibold mb-4 h-8 bg-gray-700 rounded w-3/4"></h2>
-      <div className="space-y-3">
-        <div className="h-4 bg-gray-700 rounded"></div>
-        <div className="h-4 bg-gray-700 rounded w-5/6"></div>
-        <div className="h-4 bg-gray-700 rounded w-4/6"></div>
-      </div>
-       <div className="mt-6 text-center h-10 bg-gray-700 rounded w-1/3 mx-auto"></div>
+    <>
+      
+      <div className=" max-w-2xl ml-44">
+      {/* LOADING*/}
+      <section className="p-4 border-none bg-[rgb(34,34,34)] dark:bg-gray-800">
+        <h2 className='text-2xl md:text-3xl font-bold mb-4 text-gray-200'>Loading Challenge...</h2>
+        <h2 className="text-2xl font-bold mb-3 text-gray-200 dark:text-gray-400"></h2>
+        <div className="prose dark:prose-invert max-w-none text-gray-200 dark:text-gray-300">
+          <p></p>
+        </div>
+      </section>
+
+      {/* LOADING */}
+      <section className="p-4 border-none bg-[rgb(34,34,34)] dark:bg-gray-800">
+        <h2 className="text-xl font-semibold mb-3 text-gray-100 dark:text-gray-200"></h2>
+        <div className="space-y-2">
+          <div>
+            <h3 className="font-medium mb-1 text-gray-100 dark:text-gray-300"></h3>
+            <pre className="bg-[rgb(34,34,34)] p-2 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
+              <code></code>
+            </pre>
+          </div>
+          <div>
+            <h3 className="font-medium mb-1 text-gray-100 dark:text-gray-300"></h3>
+             <pre className="bg-[rgb(34,34,34)] p-2 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
+               <code></code>
+            </pre>
+          </div>
+        </div>
+      </section>
+
+      
+      {/* Solution Section (Consider hiding initially with a button) */}
+      
     </div>
+      
+      </>
   );
 }
 
@@ -146,11 +174,11 @@ export default function Home() {
       </Suspense>
     </div>
 
-    <div className="flex justify-center items-start space-x-5 mt-4">
+    <div className="flex justify-center items-start mt-4">
       <div className="w-[600px] h-[500px]">
         <Editor />
       </div>
-      <div className="w-[600px] h-[500px]">
+      <div className="w-[600px] h-[500px] ">
         <Chat />
       </div>
     </div>

@@ -8,6 +8,7 @@ export interface ChallengeData {
     date: string; // YYYY-MM-DD
     difficulty: 'medium'; // As specified
     question: string; // The problem description
+    questionTitle: string,
     inputOutput: {
       input: string;
       output: string;
@@ -16,7 +17,7 @@ export interface ChallengeData {
     explanation: string; // Explanation of the solution
     // Any other relevant fields your API provides
   }
-  
+
 // Ensure your API key is loaded correctly from environment variables
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -28,6 +29,7 @@ const desiredJsonStructure = `{
   "date": "string (the requested date YYYY-MM-DD)",
   "difficulty": "medium",
   "question": "string (the problem description, about data structures, functions, or algorithms)",
+  "questionTitle": "string (a condensed title for the question)",
   "inputOutput": {
     "input": "string (a sample input)",
     "output": "string (the corresponding sample output)"
@@ -82,6 +84,7 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
     // Basic validation - check required fields
     if (
         !parsedData.question ||
+        !parsedData.questionTitle ||
         !parsedData.inputOutput?.input ||
         !parsedData.inputOutput?.output ||
         !parsedData.solution ||
@@ -100,6 +103,7 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
         date: parsedData.date,
         difficulty: parsedData.difficulty,
         question: parsedData.question,
+        questionTitle: parsedData.questionTitle,
         inputOutput: {
             input: parsedData.inputOutput.input,
             output: parsedData.inputOutput.output,
@@ -121,15 +125,6 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
   }
 }
 
-// --- Handling Available Dates ---
-// We can no longer reliably ask an external service *which* dates have challenges.
-// The simplest approach is to remove the concept of pre-fetching available dates.
-// The calendar will link to all past dates, and the challenge page will try to generate/fetch.
-// Therefore, we comment out or remove `getAvailableChallengeDates`.
 
-// export async function getAvailableChallengeDates(): Promise<string[]> {
-//   // This function is no longer applicable when generating directly from OpenAI on demand.
-//   return [];
-// }
 
     

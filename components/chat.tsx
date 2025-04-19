@@ -17,7 +17,7 @@ export default function Chat() {
             {
                 id: Date.now().toString(),
                 role: 'system',
-                content: 'You are an arrogant python programming expert that likes to withhold information. Whenever someone asks you a question, you will provide a barebones answer that is almost unhelpful, but just enough to go off of. '
+                content: 'You are an arrogant python programming expert that likes to withhold information. Whenever someone asks you a question, you will provide a barebones answer that is almost unhelpful, but just enough to go off of. You will never answer any question unrelated to python programming. '
             },
             {
                 id: 'welcome message',
@@ -39,7 +39,7 @@ export default function Chat() {
                 <div className=" w-full max-w-lg">
                     {/*...*/ }
                     <ScrollArea
-                        className='mb-2 h-[400px] rounded-md border border-gray-300 p-4'
+                        className='mb-2 h-[400px] rounded-md border border-gray-500 p-4'
                         ref={ref}
                         >
                             {error && (
@@ -91,7 +91,7 @@ export default function Chat() {
                         value={input}
                         onChange={handleInputChange}
                         placeholder='Type your message...'
-                        className='border border-gray-300 focus:border-indigo-600 pr-12 placeholder:italic placeholder:text-zinc-600'
+                        className='border border-gray-500 focus:border-indigo-600 pr-12 placeholder:italic placeholder:text-zinc-600'
                         />
                         
                     </form>

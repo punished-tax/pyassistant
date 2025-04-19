@@ -20,8 +20,13 @@ interface ChallengePageProps {
 
 // Generate Metadata dynamically
 export async function generateMetadata({ params }: ChallengePageProps): Promise<Metadata> {
-  // Fetch minimal data or just use the date
-  // const data = await getChallengeDataForDate(params.date); // Could fetch here too
+    const challengeData = await getChallengeDataForDate(params.date); // Fetch data
+    const title = challengeData
+      ? `${challengeData.questionTitle} - Python Challenge ${params.date}`
+      : `Python Challenge - ${params.date}`;
+    const description = challengeData
+      ? `Solve the Python coding challenge: ${challengeData.questionTitle} for ${params.date}.`
+      : `Solve the Python coding challenge for ${params.date}.`;
   return {
     title: `Python Challenge - ${params.date}`,
     description: `Solve the Python coding challenge for ${params.date}.`,
