@@ -1,7 +1,8 @@
 
 import Chat from '@/components/chat'
 import React from 'react';
-import Editor from './editor'
+//import Editor from './editor'
+import CodingEnvironment from '@/components/coding-environment'; // Import the new component
 
 import {
   Dialog,
@@ -49,10 +50,10 @@ async function TodaysChallenge() {
   return (
     <div className=" max-w-2xl ml-44">
       {/* Question Section */}
-      <section className="p-4 border-none bg-[rgb(34,34,34)] dark:bg-gray-800">
-        <h2 className='text-2xl md:text-3xl font-bold mb-4 text-gray-200'></h2>
-        <h2 className="text-2xl font-bold mb-3 text-gray-200 dark:text-gray-400">{challengeData.questionTitle}</h2>
-        <div className="prose dark:prose-invert max-w-none text-gray-200 dark:text-gray-300">
+      <section className="p-4 border-none bg-[rgb(34,34,34)]">
+        <h2 className='text-2xl md:text-3xl font-bold mb-2 text-gray-200'></h2>
+        <h2 className="text-xl font-bold mb-3 text-gray-200">{challengeData.questionTitle}</h2>
+        <div className=" text-sm prose dark:prose-invert max-w-none text-gray-200">
           <p>{challengeData.question}</p>
         </div>
       </section>
@@ -60,16 +61,16 @@ async function TodaysChallenge() {
       {/* Input/Output Example Section */}
       <section className="p-4 border-none bg-[rgb(34,34,34)] dark:bg-gray-800">
         <h2 className="text-xl font-semibold mb-3 text-gray-100 dark:text-gray-200">Example:</h2>
-        <div className="space-y-2">
+        <div className="space-y-1">
           <div>
             <h3 className="font-medium mb-1 text-gray-100 dark:text-gray-300">Input:</h3>
-            <pre className="bg-gray-500 p-2 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
+            <pre className="bg-[rgb(55,55,55)] p-1 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
               <code>{challengeData.inputOutput.input}</code>
             </pre>
           </div>
           <div>
             <h3 className="font-medium mb-1 text-gray-100 dark:text-gray-300">Output:</h3>
-             <pre className="bg-gray-500 p-2 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
+             <pre className="bg-[rgb(55,55,55)] p-1 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
                <code>{challengeData.inputOutput.output}</code>
             </pre>
           </div>
@@ -101,7 +102,9 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
             </DialogTrigger>
             <DialogContent className="bg-[rgb(34,34,34)] p-6 rounded-md">
               <DialogHeader>
-                <DialogTitle>About</DialogTitle>
+                
+                <DialogTitle className='text-xl font-mono bg-[rgb(55,55,55)]'>About PyAssistant</DialogTitle>
+                
               </DialogHeader>
               <p>Practice your coding knowledge and take on daily python challenges! This website is in the spirit of Wordle and has curated questions from ChatGPT, as well as a chatbot to help you get a headstart in solving problems. </p>
             </DialogContent>
@@ -165,7 +168,7 @@ export default function Home() {
   <>
     <Header title="PyAssistant"/>
     <div className="container mx-auto p-4 md:p-8">
-      <h1 className="text-2xl md:text-4xl font-bold mb-5 text-center text-gray-500 dark:text-white">
+      <h1 className="">
         
       </h1>
       {/* Use Suspense for a better loading experience */}
@@ -174,9 +177,9 @@ export default function Home() {
       </Suspense>
     </div>
 
-    <div className="flex justify-center items-start mt-4">
+    <div className="flex justify-center items-start mt-3 ml-28">
       <div className="w-[600px] h-[500px]">
-        <Editor />
+        <CodingEnvironment />
       </div>
       <div className="w-[600px] h-[500px] ">
         <Chat />

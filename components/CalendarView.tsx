@@ -12,7 +12,7 @@ interface CalendarViewProps {
 
 // Helper function (same as before)
 const generateDaysForMonth = (year: number, month: number): ( { dayOfMonth: number; dateString: string } | null )[] => {
-    // ... implementation remains the same ...
+    
     const days: ( { dayOfMonth: number; dateString: string } | null )[] = [];
     const firstDayOfMonth = new Date(Date.UTC(year, month - 1, 1));
     const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();

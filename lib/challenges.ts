@@ -28,7 +28,7 @@ const desiredJsonStructure = `{
   "id": "string (use the date YYYY-MM-DD)",
   "date": "string (the requested date YYYY-MM-DD)",
   "difficulty": "medium",
-  "question": "string (the problem description, about data structures, functions, or algorithms)",
+  "question": "string (the problem description, about data structures and algorithms, as well as coding interview style questions)",
   "questionTitle": "string (a condensed title for the question)",
   "inputOutput": {
     "input": "string (a sample input)",
@@ -52,7 +52,7 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
       messages: [
         {
           role: "system",
-          content: `You are an assistant that generates daily Python coding challenges focused on data structures, functions, and algorithms. You always respond with ONLY a valid JSON object matching this structure: ${desiredJsonStructure}. Do not include any introductory text, markdown formatting (like \`\`\`json), or explanations outside the JSON structure itself. The challenge difficulty must be 'medium'.`
+          content: `You are an assistant that generates daily Python coding challenges focused on data structures and algorithms, as well as coding interview style questions. You always respond with ONLY a valid JSON object matching this structure: ${desiredJsonStructure}. Do not include any introductory text, markdown formatting (like \`\`\`json), or explanations outside the JSON structure itself. The challenge difficulty must be 'medium'.`
         },
         {
           role: "user",

@@ -33,13 +33,13 @@ export default function Chat() {
         ref.current.scrollTo(0, ref.current.scrollHeight)
     }, [messages])
     return (
-        <section className='text-indigo-600'>
+        <section className='text-sky-600'>
             <div className="flex flex-col h-full "> {/** */} 
                 <h1 className="font-mono text-3xl font-medium "></h1>
                 <div className=" w-full max-w-lg">
                     {/*...*/ }
                     <ScrollArea
-                        className='mb-2 h-[400px] rounded-md border border-gray-500 p-4'
+                        className='mb-2 h-[400px] rounded border border-gray-500 p-4'
                         ref={ref}
                         >
                             {error && (
@@ -91,7 +91,7 @@ export default function Chat() {
                         value={input}
                         onChange={handleInputChange}
                         placeholder='Type your message...'
-                        className='border border-gray-500 focus:border-indigo-600 pr-12 placeholder:italic placeholder:text-zinc-600'
+                        className='border rounded border-gray-500 focus:border-sky-600 pr-12 placeholder:italic placeholder:text-zinc-600'
                         />
                         
                     </form>
