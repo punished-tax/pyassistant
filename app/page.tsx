@@ -3,7 +3,6 @@ import Chat from '@/components/chat'
 import React from 'react';
 //import Editor from './editor'
 import CodingEnvironment from '@/components/coding-environment'; // Import the new component
-
 import {
   Dialog,
   DialogContent,
@@ -11,23 +10,23 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { BadgeHelp, Play } from 'lucide-react'
-import { getChallengeDataForDate } from '@/lib/challenges';
+import { BadgeHelp } from 'lucide-react'
+import { getChallengeDataForDate, ChallengeData } from '@/lib/challenges';
 import Link from 'next/link';
 import { Suspense } from 'react'; // For better loading states
 
 
-
-
 export const revalidate = 86400; // 24 hours
+
+
 
 function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-async function TodaysChallenge() {
+async function TodaysChallenge({ challengeData }: { challengeData: ChallengeData | null}) {
   const today = getTodayDateString();
-  const challengeData = await getChallengeDataForDate(today);
+  //const challengeData = await getChallengeDataForDate(today);
 
   if (!challengeData) {
     return (
@@ -74,6 +73,7 @@ async function TodaysChallenge() {
                <code>{challengeData.inputOutput.output}</code>
             </pre>
           </div>
+          
         </div>
       </section>
 
@@ -159,10 +159,19 @@ function LoadingTodaysChallenge() {
   );
 }
 
-export const runtime = 'edge'
+//export const runtime = 'edge'
 
-export default function Home() {
-  
+export default async function Home() {
+  const today = getTodayDateString();
+  const challengeData = await getChallengeDataForDate(today);
+
+  // Prepare props for CodingEnvironment
+  // Extract raw inputs (handle null challengeData)
+  const rawInputs: string[] = challengeData?.testCases?.map(tc => tc.input) ?? [];
+  // Get reference solution (handle null challengeData)
+  const referenceSolutionCode: string = challengeData?.solution ?? ""; // Provide empty string as fallback
+  // Generate initial code for editor
+  //const initialCode = generateInitialCode(challengeData);
  
   return (
   <>
@@ -173,13 +182,13 @@ export default function Home() {
       </h1>
       {/* Use Suspense for a better loading experience */}
       <Suspense fallback={<LoadingTodaysChallenge />}>
-         <TodaysChallenge />
+         <TodaysChallenge challengeData={challengeData} />
       </Suspense>
     </div>
 
     <div className="flex justify-center items-start mt-3 ml-28">
       <div className="w-[600px] h-[500px]">
-        <CodingEnvironment />
+        <CodingEnvironment rawInputs={rawInputs} referenceSolutionCode={referenceSolutionCode}  />
       </div>
       <div className="w-[600px] h-[500px] ">
         <Chat />

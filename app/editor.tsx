@@ -16,7 +16,7 @@ interface EditorProps {
 }
 
 const defaultInitialCode = `def solve():
-  pass
+    pass
 `;
 
 export default function Editor({

@@ -3,131 +3,278 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import type { PyodideInterface } from 'pyodide';
-import Editor from '@/app/editor'; // Adjust path if necessary
-import { getPyodide, runPythonCode } from '@/lib/pyodide-service';
-import { Button } from '@/components/ui/button'; // Assuming shadcn/ui
-import { Play, Loader2 } from 'lucide-react';
+import Editor from '@/app/editor';
+// Import the *new* service function and types
+import { getPyodide, runPythonCodeWithTests, runReferenceSolution } from '@/lib/pyodide-service';
+import type { TestCase, TestExecutionResult } from '@/lib/test-result';
+import { Button } from '@/components/ui/button';
+import { Play, Loader2, CheckCircle, XCircle, AlertTriangle, Cog } from 'lucide-react';
 
-// Default initial code for the editor
-const defaultInitialCode = `def solve():
-  pass
+// Interface for props
+interface CodingEnvironmentProps {
+  rawInputs: string[];         // <<< Changed: Raw input strings
+  referenceSolutionCode: string; // <<< Added: The correct solution code
+  initialCode?: string;        // Optional: Editor starting code
+}
 
-
+// Default initial code if not provided by props
+const defaultCode = `def solve():
+    pass
 `;
 
-// Adjust the total desired height for the combined editor and output area
-const TOTAL_ENVIRONMENT_HEIGHT = '700px'; // Example: Adjust as needed
-const EDITOR_HEIGHT = '400px'; // Keep editor height fixed or make it flexible
+const TOTAL_ENVIRONMENT_HEIGHT = '700px';
+const EDITOR_HEIGHT = '400px';
 
-export default function CodingEnvironment() {
-  const [code, setCode] = useState<string>(defaultInitialCode);
-  const [output, setOutput] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
+type GenerationStatus = 'idle' | 'generating' | 'ready' | 'error';
+
+export default function CodingEnvironment({
+  rawInputs,
+  referenceSolutionCode,
+  initialCode = defaultCode, // Use prop or default
+}: CodingEnvironmentProps) {
+  const [code, setCode] = useState<string>(initialCode);
+  const [userTestResult, setUserTestResult] = useState<TestExecutionResult | null>(null); // Result of user code run
   const [isPyodideLoading, setIsPyodideLoading] = useState<boolean>(true);
-  const [isExecuting, setIsExecuting] = useState<boolean>(false);
+  const [isExecutingUserCode, setIsExecutingUserCode] = useState<boolean>(false); // Renamed for clarity
+  const [pyodideLoadError, setPyodideLoadError] = useState<string | null>(null);
   const pyodideRef = useRef<PyodideInterface | null>(null);
+
+    // State for dynamic test case generation
+    const [generatedTestCases, setGeneratedTestCases] = useState<TestCase[] | null>(null);
+    const [testCaseGenerationStatus, setTestCaseGenerationStatus] = useState<GenerationStatus>('idle');
+    const [testCaseGenerationError, setTestCaseGenerationError] = useState<string | null>(null);
+
+  // Effect to potentially update editor if initialCode prop changes
+  useEffect(() => {
+      setCode(initialCode);
+      // Optionally, you could trigger a reset of test results here too if desired
+       setUserTestResult(null); //hmmmmm
+  }, [initialCode]);
+
 
   // Load Pyodide on component mount
   useEffect(() => {
     let isMounted = true;
-    console.log("Attempting to load Pyodide...");
-    getPyodide()
-      .then((instance) => {
-        if (isMounted) {
-          pyodideRef.current = instance;
-          setIsPyodideLoading(false);
-          console.log("Pyodide instance assigned.");
-        }
-      })
-      .catch((err) => {
-        console.error('Failed to load Pyodide:', err);
-        if (isMounted) {
-          setError(`Failed to load Python environment: ${err.message}`);
-          setIsPyodideLoading(false);
-        }
-      });
+    // Only load if not already loaded or loading
+    if (!pyodideRef.current && isPyodideLoading && !pyodideLoadError) {
+        console.log("Attempting to load Pyodide...");
+        getPyodide()
+        .then((instance) => {
+            if (isMounted) {
+                pyodideRef.current = instance;
+                setIsPyodideLoading(false);
+                setPyodideLoadError(null);
+                console.log("Pyodide instance assigned.");
+            }
+        })
+        .catch((err) => {
+          console.error('Failed to load Pyodide:', err);
+          if (isMounted) {
+              setPyodideLoadError(`Failed to load Python environment: ${err.message}`);
+              setIsPyodideLoading(false);
+              setTestCaseGenerationStatus('error'); // Can't generate tests if Pyodide fails
+              setTestCaseGenerationError('Pyodide failed to load.');
+          }
+        });
+    }
 
-      return () => {
-          isMounted = false; // Prevent state updates if component unmounts during load
-      }
-  }, []); // Empty dependency array ensures this runs only once on mount
+    return () => {
+        isMounted = false;
+    }
+  }, [isPyodideLoading, pyodideLoadError]); // Re-run if loading state changes or error clears
+
+
+  // Effect to generate expected outputs using reference solution
+  useEffect(() => {
+    // Conditions to run: Pyodide ready, have inputs/solution, not already generating/ready/error
+    if (
+        pyodideRef.current &&
+        rawInputs && rawInputs.length > 0 &&
+        referenceSolutionCode &&
+        testCaseGenerationStatus === 'idle' // Only run once
+    ) {
+      const generateOutputs = async () => {
+        setTestCaseGenerationStatus('generating');
+        setTestCaseGenerationError(null);
+        console.log("Generating expected outputs from reference solution...");
+
+        console.log("Reference Solution Code being used:\n", referenceSolutionCode); //LOG
+
+        const newTestCases: TestCase[] = [];
+        let success = true;
+
+        for (let i = 0; i < rawInputs.length; i++) {
+          const input = rawInputs[i];
+          const result = await runReferenceSolution(pyodideRef.current!, referenceSolutionCode, input);
+
+          if (result.error || result.outputRepr === null) {
+            console.error(`Error generating expected output for input ${i + 1} ("${input}"): ${result.error || 'Unknown error'}`);
+            setTestCaseGenerationError(`Failed to generate expected output for test case ${i + 1}. The reference solution might be flawed. Error: ${result.error || 'Invalid output representation.'}`);
+            setTestCaseGenerationStatus('error');
+            success = false;
+            break; // Stop generation on first error
+          } else {
+            newTestCases.push({ input: input, output: result.outputRepr });
+          }
+        }
+
+        if (success) {
+          console.log("Successfully generated all expected outputs.", newTestCases);
+          setGeneratedTestCases(newTestCases);
+          setTestCaseGenerationStatus('ready');
+        } else {
+          setGeneratedTestCases(null); // Clear any partial results on error
+        }
+      };
+
+      generateOutputs();
+    } else if (rawInputs?.length === 0 && testCaseGenerationStatus === 'idle') {
+        // Handle case where no inputs are provided
+        console.warn("No raw inputs provided for test case generation.");
+        setTestCaseGenerationStatus('error');
+        setTestCaseGenerationError('No inputs available to generate test cases.');
+    }
+    // Dependencies: trigger when pyodide is ready or inputs/solution change
+  }, [pyodideRef.current, rawInputs, referenceSolutionCode, testCaseGenerationStatus]);
+
 
   const handleCodeChange = useCallback((newCode: string) => {
     setCode(newCode);
+    setUserTestResult(null); // Clear previous user results when code changes
   }, []);
 
-  const handleRunCode = useCallback(async () => {
-    if (!pyodideRef.current || isExecuting || isPyodideLoading) {
-      console.log("Run aborted: Pyodide not ready or already executing.");
+  const handleSubmitCode = useCallback(async () => {
+    // Must have Pyodide, not be executing, no load error, AND test cases must be generated ('ready')
+    if (
+        !pyodideRef.current ||
+        isExecutingUserCode ||
+        isPyodideLoading ||
+        pyodideLoadError ||
+        testCaseGenerationStatus !== 'ready' ||
+        !generatedTestCases // Ensure generatedTestCases is not null
+     ) {
+      console.log("Submit aborted: Conditions not met.", {
+          pyodide: !!pyodideRef.current, isExecutingUserCode, isPyodideLoading,
+          pyodideLoadError, testCaseGenerationStatus, generatedTestCases: !!generatedTestCases
+      });
+      // Optionally provide more specific feedback based on status
+      if (testCaseGenerationStatus === 'generating') alert("Please wait, preparing test cases...");
+      else if (testCaseGenerationStatus === 'error') alert(`Cannot submit: Error during test case preparation. ${testCaseGenerationError || ''}`);
       return;
     }
 
-    setIsExecuting(true);
-    setOutput(''); // Clear previous output
-    setError(null); // Clear previous error
+    setIsExecutingUserCode(true);
+    setUserTestResult(null);
 
-    console.log("Executing code...");
-    const result = await runPythonCode(pyodideRef.current, code);
-    console.log("Execution finished. Result:", result);
-
-    setOutput(result.output);
-    setError(result.error);
-    setIsExecuting(false);
-  }, [code, isExecuting, isPyodideLoading]); // Dependencies for the callback
-
-  return (
-    // Changed flex direction to 'col' and removed md:flex-row. Removed gap-4 (can add back if needed for vertical spacing).
-    // Added a height constraint to the overall environment if desired.
-    <div className="flex flex-col w-full" style={{ height: TOTAL_ENVIRONMENT_HEIGHT }}>
-
-      {/* Editor Section - Takes full width now */}
-      <div className="w-full flex flex-col" style={{ height: EDITOR_HEIGHT }}> {/* Assign specific height to editor container */}
-        <div className="flex-grow"> {/* Let Editor component fill this */}
-            <Editor initialCode={code} onCodeChange={handleCodeChange} />
-        </div>
-         <div className="mt-2 flex justify-end pr-24 pb-2"> {/* Added some padding */}
-            <Button
-                onClick={handleRunCode}
-                disabled={isPyodideLoading || isExecuting}
-                size="lg"
-                variant="outline" 
-                className='bg-[rgb(55,55,55)] border rounded-xl border-[rgb(44,44,44)] hover:bg-[rgb(75,75,75)]'
-            >
-                {isPyodideLoading ? (
-                    <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</> // Shortened text
-                ) : isExecuting ? (
-                    <> <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running...</>
-                ) : (
-                  <>
-                  <Play className="h-4 w-4 text-green-700" />
-                  <span className="text-green-700 text-lg font-semibold">Submit</span>
-                </>
-              )}
-            </Button>
+    console.log("Executing user code with generated test cases...");
+     // Use the dynamically generated test cases
+     const result = await runPythonCodeWithTests(pyodideRef.current, code, generatedTestCases);
+     console.log("User code execution finished. Result:", result);
+ 
+     setUserTestResult(result);
+     setIsExecutingUserCode(false);
+   }, [code, generatedTestCases, isExecutingUserCode, isPyodideLoading, pyodideLoadError, testCaseGenerationStatus, testCaseGenerationError]); // Added generation status/error deps
+ 
+ 
+   // Helper to render test result details for USER'S code
+   const RenderUserTestResult = () => {
+      // Display generation status *before* user results if not ready
+      if (testCaseGenerationStatus === 'generating') {
+         return <p className="text-yellow-400 flex items-center"><Cog className="mr-2 h-4 w-4 animate-spin" /> Preparing Test Cases...</p>;
+      }
+       if (testCaseGenerationStatus === 'error') {
+          return <p className="text-red-400 flex items-center"><AlertTriangle className="mr-2 h-4 w-4" /> Error Preparing Tests: {testCaseGenerationError || 'Unknown error'}</p>;
+      }
+      if (testCaseGenerationStatus !== 'ready') {
+           return <p className="text-gray-400">Waiting for test case preparation...</p>;
+      }
+ 
+      // If tests are ready, show execution/result status
+     if (isExecutingUserCode) {
+         return <p className="text-gray-400 flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Your Code...</p>;
+     }
+     if (!userTestResult) {
+         return <p className="text-gray-400">Click "Submit" to run test cases against your solution.</p>;
+     }
+ 
+     // ... (switch statement for userTestResult.status: success, failed, error remains the same as before)
+     switch (userTestResult.status) {
+         case 'success':
+             return (
+                 <div className="text-green-400 space-y-2">
+                     <p className="flex items-center font-semibold"><CheckCircle className="mr-2 h-5 w-5" /> Success!</p>
+                     <p>Your code passed all {userTestResult.passedCount} test cases.</p>
+                     {/* Optional: Display stdout from user run */}
+                     {/* {userTestResult.stdout && <pre className="text-xs text-gray-500 mt-2 whitespace-pre-wrap break-words">Combined Output:\n{userTestResult.stdout}</pre>} */}
+                 </div>
+             );
+         case 'failed':
+              return (
+                  <div className="text-red-400 space-y-2">
+                     <p className="flex items-center font-semibold"><XCircle className="mr-2 h-5 w-5" /> Test Case {userTestResult.testCaseNumber} Failed</p>
+                     <div><p className="font-medium text-gray-300">Input:</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.input}</pre></div>
+                     <div><p className="font-medium text-gray-300">Expected Output:</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.expectedOutput}</pre></div>
+                     <div><p className="font-medium text-gray-300">Your Output:</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.actualOutput}</pre></div>
+                     {userTestResult.error && (<div><p className="font-medium text-gray-300">Runtime Error:</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.error}</pre></div>)}
+                     {userTestResult.stdout && (<div><p className="font-medium text-gray-300">Your Captured Output (stdout/stderr):</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.stdout}</pre></div>)}
+                  </div>
+              );
+         case 'error':
+              return (
+                  <div className="text-orange-400 space-y-2">
+                      <p className="flex items-center font-semibold"><AlertTriangle className="mr-2 h-5 w-5" /> Execution Error</p>
+                     <p>Could not run tests on your code due to an error:</p>
+                     <pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.message}</pre>
+                     {userTestResult.stdout && (<div><p className="font-medium text-gray-300">Your Captured Output (stdout/stderr):</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.stdout}</pre></div>)}
+                  </div>
+              );
+         default:
+               return <p className="text-gray-400">Submit your code to see the results.</p>; // Fallback
+     }
+   };
+ 
+   // Determine button disabled state and text
+   const getButtonState = (): { disabled: boolean; content: React.ReactNode } => {
+       if (isPyodideLoading) return { disabled: true, content: <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Pyodide...</> };
+       if (pyodideLoadError) return { disabled: true, content: <><AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Pyodide Error</> };
+       if (testCaseGenerationStatus === 'generating') return { disabled: true, content: <><Cog className="mr-2 h-4 w-4 animate-spin" /> Preparing Tests...</> };
+       if (testCaseGenerationStatus === 'error') return { disabled: true, content: <><AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Test Prep Error</> };
+       if (isExecutingUserCode) return { disabled: true, content: <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Code...</> };
+       // Ready to submit
+       return { disabled: false, content: <><Play className="h-4 w-4 text-green-700" /><span className="text-green-700 text-lg font-semibold">Submit</span></> };
+   };
+ 
+   const buttonState = getButtonState();
+ 
+   return (
+     <div className="flex flex-col w-full" style={{ height: TOTAL_ENVIRONMENT_HEIGHT }}>
+       {/* Editor Section */}
+       <div className="w-full flex flex-col" style={{ height: EDITOR_HEIGHT }}>
+         <div className="flex-grow">
+             <Editor initialCode={code} onCodeChange={handleCodeChange} />
          </div>
-      </div>
-
-      {/* Output/Results Section - Takes full width, appears below */}
-      {/* Using flex-grow allows this section to fill remaining vertical space */}
-      <div className="w-[300px] flex flex-col border border-gray-500 bg-[rgb(34,34,34)] text-white rounded mt-4 flex-grow min-h-0"> {/* Added mt-4 for spacing, flex-grow and min-h-0 for flexible height */}
-          <div className="p-2 border-b border-gray-600 text-sm font-medium flex-shrink-0"> {/* Prevent header shrinking */}
-            Output / Results
+          <div className="mt-2 flex justify-end pr-24 pb-2">
+             <Button
+                 onClick={handleSubmitCode}
+                 disabled={buttonState.disabled}
+                 size="lg"
+                 variant="outline"
+                 className='bg-[rgb(55,55,55)] border rounded-xl border-[rgb(44,44,44)] hover:bg-[rgb(75,75,75)] disabled:opacity-60' // Added disabled style
+             >
+                 {buttonState.content}
+             </Button>
           </div>
-          {/* Make the content area scrollable */}
-          <div className="flex-grow p-3 overflow-auto text-sm font-mono">
-              {isPyodideLoading && !error && <p>Loading Python Environment...</p>}
-              {error && (
-                  <pre className="text-red-400 whitespace-pre-wrap break-words">Error: {error}</pre>
-              )}
-              {/* Show output */}
-              {output && (
-                 <pre className="whitespace-pre-wrap break-words">{output}</pre>
-              )}
-              {!isPyodideLoading && !isExecuting && !output && !error && (
-                 <p className="text-gray-400">Click "Submit" to execute your solution.</p>
-              )}
-          </div>
-      </div>
-    </div>
-  );
-}
+       </div>
+ 
+       {/* Output/Results Section */}
+       <div className="w-[300px] flex flex-col border border-gray-500 bg-[rgb(34,34,34)] text-white rounded mt-4 flex-grow min-h-0">
+           <div className="p-2 border-b border-gray-600 text-sm font-medium flex-shrink-0">
+             Test Results
+           </div>
+           <div className="flex-grow p-3 overflow-auto text-sm font-mono">
+              <RenderUserTestResult /> {/* Use the helper component */}
+           </div>
+       </div>
+     </div>
+   );
+ }
