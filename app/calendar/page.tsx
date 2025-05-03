@@ -10,10 +10,7 @@ import {
   } from '@/components/ui/dialog'
   import { BadgeHelp, Play } from 'lucide-react'
 
-export const metadata = {
-  title: 'Challenge Calendar',
-  description: 'Browse past Python coding challenges.',
-};
+
 const Header: React.FC<{ title: string }> = ({ title }) => {
     return (
       <header className="relative bg-black border-b border-gray-500 py-2">

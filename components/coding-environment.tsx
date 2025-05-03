@@ -212,11 +212,11 @@ export default function CodingEnvironment({
               return (
                   <div className="text-red-400 space-y-2">
                      <p className="flex items-center font-semibold"><XCircle className="mr-2 h-5 w-5" /> Test Case {userTestResult.testCaseNumber} Failed</p>
-                     <div><p className="font-medium text-gray-300">Input:</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.input}</pre></div>
-                     <div><p className="font-medium text-gray-300">Expected Output:</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.expectedOutput}</pre></div>
-                     <div><p className="font-medium text-gray-300">Your Output:</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.actualOutput}</pre></div>
-                     {userTestResult.error && (<div><p className="font-medium text-gray-300">Runtime Error:</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.error}</pre></div>)}
-                     {userTestResult.stdout && (<div><p className="font-medium text-gray-300">Your Captured Output (stdout/stderr):</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.stdout}</pre></div>)}
+                     <div><span className="font-medium text-gray-300">Input:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.input}</pre></div>
+                     <div><span className="font-medium text-gray-300">Expected:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.expectedOutput}</pre></div>
+                     <div><span className="font-medium text-gray-300">Output:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.actualOutput}</pre></div>
+                     {userTestResult.error && (<div><span className="font-medium text-gray-300">Runtime Error:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.error}</pre></div>)}
+                     {userTestResult.stdout && (<div><span className="font-medium text-gray-300">Your Captured Output (stdout/stderr):</span><pre className="inline bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.stdout}</pre></div>)}
                   </div>
               );
          case 'error':
@@ -235,13 +235,13 @@ export default function CodingEnvironment({
  
    // Determine button disabled state and text
    const getButtonState = (): { disabled: boolean; content: React.ReactNode } => {
-       if (isPyodideLoading) return { disabled: true, content: <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading Pyodide...</> };
-       if (pyodideLoadError) return { disabled: true, content: <><AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Pyodide Error</> };
+       if (isPyodideLoading) return { disabled: true, content: <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Loading...</> };
+       if (pyodideLoadError) return { disabled: true, content: <><AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Error</> };
        if (testCaseGenerationStatus === 'generating') return { disabled: true, content: <><Cog className="mr-2 h-4 w-4 animate-spin" /> Preparing Tests...</> };
        if (testCaseGenerationStatus === 'error') return { disabled: true, content: <><AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Test Prep Error</> };
        if (isExecutingUserCode) return { disabled: true, content: <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Code...</> };
        // Ready to submit
-       return { disabled: false, content: <><Play className="h-4 w-4 text-green-700" /><span className="text-green-700 text-lg font-semibold">Submit</span></> };
+       return { disabled: false, content: <><Play className=" h-4 w-4 text-green-700 !size-5" /><span className="text-green-700 text-lg font-sans-serif">Submit</span></> };
    };
  
    const buttonState = getButtonState();
@@ -257,9 +257,9 @@ export default function CodingEnvironment({
              <Button
                  onClick={handleSubmitCode}
                  disabled={buttonState.disabled}
-                 size="lg"
+                 //size="lg"
                  variant="outline"
-                 className='bg-[rgb(55,55,55)] border rounded-xl border-[rgb(44,44,44)] hover:bg-[rgb(75,75,75)] disabled:opacity-60' // Added disabled style
+                 className='bg-[rgb(55,55,55)] border rounded-xl border-[rgb(44,44,44)] hover:bg-[rgb(75,75,75)] disabled:opacity-60 px-5 py-5' // Added disabled style
              >
                  {buttonState.content}
              </Button>
@@ -267,11 +267,8 @@ export default function CodingEnvironment({
        </div>
  
        {/* Output/Results Section */}
-       <div className="w-[300px] flex flex-col border border-gray-500 bg-[rgb(34,34,34)] text-white rounded mt-4 flex-grow min-h-0">
-           <div className="p-2 border-b border-gray-600 text-sm font-medium flex-shrink-0">
-             Test Results
-           </div>
-           <div className="flex-grow p-3 overflow-auto text-sm font-mono">
+       <div className="w-[250px] flex flex-row bg-[rgb(55,55,55)] text-white rounded mt-2">
+   <div className="p-2 text-sm font-mono h-auto">
               <RenderUserTestResult /> {/* Use the helper component */}
            </div>
        </div>

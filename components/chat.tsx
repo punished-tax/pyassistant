@@ -22,7 +22,7 @@ export default function Chat() {
             {
                 id: 'welcome message',
                 role: 'assistant',
-                content: "Hi, I'm ChatGPT trained to answer your coding questions. Keep in mind that I won't be giving away complete answers!"
+                content: "Hi, I'm ChatGPT tuned to answer your coding questions. Keep in mind that I won't be giving away complete answers!"
 
 
             }
@@ -33,13 +33,13 @@ export default function Chat() {
         ref.current.scrollTo(0, ref.current.scrollHeight)
     }, [messages])
     return (
-        <section className='text-sky-600'>
+        <section className='text-orange-600'>
             <div className="flex flex-col h-full "> {/** */} 
                 <h1 className="font-mono text-3xl font-medium "></h1>
                 <div className=" w-full max-w-lg">
                     {/*...*/ }
                     <ScrollArea
-                        className='mb-2 h-[400px] rounded border border-gray-500 p-4'
+                        className='mb-2 h-[400px] rounded border border-[rgb(75,75,75)] bg-[rgb(45,45,45)] p-4'
                         ref={ref}
                         >
                             {error && (
@@ -75,7 +75,7 @@ export default function Chat() {
                                                     <p className='font-semibold'>Bot</p>
                                                     <CopytoClipboard message={m} className='-mt-1' />
                                                     </div>
-                                                    <div className='mt-2 text-sm text-white'>
+                                                    <div className='mt-2 text-sm text-gray-100'>
                                                         {m.content}
                                                     </div>
                                                 </div>
@@ -91,7 +91,7 @@ export default function Chat() {
                         value={input}
                         onChange={handleInputChange}
                         placeholder='Type your message...'
-                        className='border rounded border-gray-500 focus:border-sky-600 pr-12 placeholder:italic placeholder:text-zinc-600'
+                        className='border rounded border-[rgb(75,75,75)] focus:border-orange-600 pr-12 placeholder:italic placeholder:text-zinc-600'
                         />
                         
                     </form>

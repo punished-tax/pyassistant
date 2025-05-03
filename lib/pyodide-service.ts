@@ -384,7 +384,7 @@ export async function runPythonCodeWithTests(
 
            // Check results
           if (errorOccurred) {
-              console.error(`User Test Case ${testCaseNum} failed with runtime error.`);
+              //console.error(`User Test Case ${testCaseNum} failed with runtime error.`); //error logging
               return { status: 'failed', testCaseNumber: testCaseNum, input: testCase.input,
                   expectedOutput: testCase.output, actualOutput: "Runtime Error",
                   error: String(errorOccurred), stdout: currentCombinedOutput };
@@ -399,7 +399,7 @@ export async function runPythonCodeWithTests(
 
           // Compare user's actualRepr with the generated expected output
           if (actualRepr !== testCase.output) {
-               console.error(`User Test Case ${testCaseNum} failed. Expected: ${testCase.output}, Got: ${actualRepr}`);
+               //console.error(`User Test Case ${testCaseNum} failed. Expected: ${testCase.output}, Got: ${actualRepr}`); error logging
                return { status: 'failed', testCaseNumber: testCaseNum, input: testCase.input,
                   expectedOutput: testCase.output, actualOutput: String(actualRepr),
                   error: null, stdout: currentCombinedOutput };

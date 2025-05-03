@@ -33,13 +33,14 @@ const desiredJsonStructure = `{
   "id": "string (use the date YYYY-MM-DD)",
   "date": "string (the requested date YYYY-MM-DD)",
   "difficulty": "medium",
-  "question": "string (the problem description, about data structures and algorithms or coding interview style)",
+  "question": "string (the problem description, about lists, strings, or more advanced data structures)",
   "questionTitle": "string (a condensed title for the question)",
   "inputOutput": {
     "input": "string (a single, clear sample input for display)",
     "output": "string (the corresponding sample output for display)"
   },
-  "solutionHeader": "string (The Python function signature needed for the solution, the function HAS to be named 'solve' e.g., 'def solve(nums: list[int], target: int) -> list[int]:')",
+  "solutionHeader": "string (The Python function signature needed for the solution, the function HAS to be named 'solve')
+",
   "solution": "string (a correct Python code solution including the 'solve' function defined by solutionHeader)",
   "explanation": "string (a clear explanation of the Python solution approach)",
   "testCases": [
@@ -66,7 +67,7 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
         {
           role: "system",
           // 3. Update the System Prompt to reflect the new structure
-          content: `You are an assistant that generates daily Python coding challenges (difficulty: medium) focused on data structures, algorithms, and coding interview styles. You ALWAYS respond with ONLY a valid JSON object matching this exact structure: ${desiredJsonStructure}. Do not include any introductory text, markdown formatting (like \`\`\`json), comments, or explanations outside the JSON structure itself. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. unless imported from the typing module. Provide exactly 5 distinct 'testCases' in the specified array format, ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'.`
+          content: `You are an assistant that generates daily Python coding challenges (difficulty: medium) about lists, strings, or more advanced data structures. You ALWAYS respond with ONLY a valid JSON object matching this exact structure: ${desiredJsonStructure}. Do not include any introductory text, markdown formatting (like \`\`\`json), comments, or explanations outside the JSON structure itself. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. unless imported from the typing module. Provide exactly 5 distinct 'testCases' in the specified array format, ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'.`
         },
         {
           role: "user",
