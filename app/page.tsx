@@ -78,23 +78,25 @@ async function TodaysChallenge({ challengeData }: { challengeData: ChallengeData
       </section>
 
       {/* Input/Output Example Section - overflow-x-auto replaced with block w-fit*/}
-      <section className="p-4 border-none bg-[rgb(34,34,34)] dark:bg-gray-800">
-        <h2 className="text-xl font-semibold mb-2 text-gray-100 dark:text-gray-200">Example:</h2>
+      <section className="p-4 border-none bg-[rgb(34,34,34)]">
+        <h2 className="text-xl font-semibold mb-2 text-gray-100">Example:</h2>
         <div className="space-y-1">
-          <div>
-            <h3 className="font-medium mb-1 text-gray-100 dark:text-gray-300">Input:</h3>
-            <pre className="bg-[rgb(55,55,55)] p-1 rounded block w-fit text-sm text-gray-100 dark:text-gray-200">
-              <code>{challengeData.inputOutput.input}</code>
-            </pre>
-          </div>
-          <div>
-            <h3 className="font-medium mb-1 text-gray-100 dark:text-gray-300">Output:</h3>
-             <pre className="bg-[rgb(55,55,55)] p-1 rounded block w-fit text-sm text-gray-100 dark:text-gray-200">
+        <div className="flex items-start space-x-2">
+  <h3 className="font-medium text-gray-100 mb-0">Input:</h3>
+  <pre
+    className="inline-block bg-[rgb(55,55,55)] p-1 rounded text-sm text-gray-100 m-0 whitespace-pre-wrap"
+  >
+    <code>{challengeData.inputOutput.input}</code>
+  </pre>
+        </div>
+          <div className='flex items-start space-x-2'>
+            <h3 className="font-medium mb-0 text-gray-100">Output:</h3>
+             <pre className="inline-block bg-[rgb(55,55,55)] p-1 rounded text-sm text-gray-100 m-0 whitespace-pre-wrap">
                <code>{challengeData.inputOutput.output}</code>
             </pre>
           </div>
           <div>
-            <h3 className="text-sm prose mt-2 text-gray-200">Make sure you return your solution, don't print!</h3>
+            <h3 className="text-sm prose mt-3 text-gray-200">Make sure you return your solution, don't print!</h3>
              
           </div>
         </div>
