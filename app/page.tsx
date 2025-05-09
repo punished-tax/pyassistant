@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { BadgeHelp, icons } from 'lucide-react'
+import { BadgeHelp, icons, Dices } from 'lucide-react'
 import { getChallengeDataForDate, ChallengeData } from '@/lib/challenges';
 import Link from 'next/link';
 import { Suspense } from 'react'; // For better loading states
@@ -18,7 +18,7 @@ import { title } from 'process';
 import { Description } from '@radix-ui/react-dialog';
 
 export const metadata = {
-  title: "PyAssistant",
+  title: "pyassistant",
   Description: "Daily Python Coding Challenges",
   icons: {
     icon: '/favicon.ico'
@@ -34,7 +34,7 @@ function generateInitialCode(challengeData: ChallengeData | null): string {
       const header = challengeData.solutionHeader.trim();
       // Basic check if it already ends with a colon, common in function defs
       const needsColon = !header.endsWith(':');
-      return `${header}${needsColon ? ':' : ''}\n    pass\n\n`;
+      return `${header}${needsColon ? ':' : ''}\n  pass\n\n`;
   }
   // Fallback default code
   return `def solve():\n  # Your solution here\n  pass\n\n`;
@@ -79,19 +79,19 @@ async function TodaysChallenge({ challengeData }: { challengeData: ChallengeData
 
       {/* Input/Output Example Section - overflow-x-auto replaced with block w-fit*/}
       <section className="p-4 border-none bg-[rgb(34,34,34)]">
-        <h2 className="text-xl font-semibold mb-2 text-gray-100">Example:</h2>
+        <h2 className="text-xl font-semibold mb-3 text-gray-100">Example:</h2>
         <div className="space-y-1">
         <div className="flex items-start space-x-2">
-  <h3 className="font-medium text-gray-100 mb-0">Input:</h3>
+  <h3 className="font-medium text-sm text-gray-100 mb-0 ml-1">Input:</h3>
   <pre
-    className="inline-block bg-[rgb(55,55,55)] p-1 rounded text-sm text-gray-100 m-0 whitespace-pre-wrap"
+    className="inline-block bg-[rgb(55,55,55)] p-1 rounded text-xs text-gray-100 m-0 whitespace-pre-wrap"
   >
     <code>{challengeData.inputOutput.input}</code>
   </pre>
         </div>
           <div className='flex items-start space-x-2'>
-            <h3 className="font-medium mb-0 text-gray-100">Output:</h3>
-             <pre className="inline-block bg-[rgb(55,55,55)] p-1 rounded text-sm text-gray-100 m-0 whitespace-pre-wrap">
+            <h3 className="font-medium text-sm mb-0 text-gray-100 ml-1">Output:</h3>
+             <pre className="inline-block bg-[rgb(55,55,55)] p-1 rounded text-xs text-gray-100 m-0 whitespace-pre-wrap">
                <code>{challengeData.inputOutput.output}</code>
             </pre>
           </div>
@@ -122,7 +122,12 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
         <div className='absolute left-4 top-1/2 transform -translate-y-1/2'>
           <span>
             
+            <Link href='/calendar' className='inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors'>
+            <Dices> size={25}</Dices>
+            Archive
+            </Link>
           </span>
+          
         </div>
         
         <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
@@ -206,7 +211,7 @@ export default async function Home() {
  
   return (
   <>
-    <Header title="PyAssistant"/>
+    <Header title="pyassistant"/>
     <div className="container mx-auto p-4 md:p-8">
       <h1 className="">
         
@@ -217,11 +222,11 @@ export default async function Home() {
       </Suspense>
     </div>
 
-    <div className="flex justify-center items-start mt-3 ml-28">
+    <div className="flex justify-center items-end ml-28">
       <div className="w-[600px] h-[500px]">
         <CodingEnvironment rawInputs={rawInputs} referenceSolutionCode={referenceSolutionCode} initialCode={initialCode}  />
       </div>
-      <div className="w-[600px] h-[500px] ">
+      <div className="w-[600px] h-[500px] mb-16">
         <Chat />
       </div>
     </div>

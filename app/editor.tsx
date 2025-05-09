@@ -77,5 +77,5 @@ export default function Editor({
 
   // Removed fixed height/width here, rely on parent container's styling
   // Added h-full to make it fill the parent div's height
-  return <div ref={editorRef} className="border rounded border-[rgb(75,75,75)] w-[500px] h-[400px] overflow-auto" />; // overflow-hidden on parent
+  return <div ref={editorRef} className="border-2 rounded-2xl border-[rgb(75,75,75)] w-[500px] h-[400px] overflow-auto" />; // overflow-hidden on parent
 }
