@@ -1,8 +1,7 @@
-
-import Chat from '@/components/chat'
-import React from 'react';
+//page.tsx
+import React, { Suspense} from 'react'; // Added useCallback
 //import Editor from './editor'
-import CodingEnvironment from '@/components/coding-environment'; // Import the new component
+
 import {
   Dialog,
   DialogContent,
@@ -13,17 +12,14 @@ import {
 import { BadgeHelp, icons, Dices } from 'lucide-react'
 import { getChallengeDataForDate, ChallengeData } from '@/lib/challenges';
 import Link from 'next/link';
-import { Suspense } from 'react'; // For better loading states
-import { title } from 'process';
-import { Description } from '@radix-ui/react-dialog';
+import ChallengeInterfaceClient from '@/components/challenge-interface'; // We will create this
 
 export const metadata = {
   title: "pyassistant",
-  Description: "Daily Python Coding Challenges",
-  icons: {
-    icon: '/favicon.ico'
-  }
-}
+  description: "Daily Python Coding Challenges",
+  icons: { icon: '/favicon.ico' }
+};
+
 export const revalidate = 86400; // 24 hours
 
 // Helper to generate default editor code from header or fallback
@@ -44,70 +40,7 @@ function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-async function TodaysChallenge({ challengeData }: { challengeData: ChallengeData | null}) {
-  const today = getTodayDateString();
-  //const challengeData = await getChallengeDataForDate(today);
 
-  if (!challengeData) {
-    return (
-      <div className="p-6 border rounded-lg shadow-md bg-white dark:bg-gray-800">
-        <h2 className="text-2xl font-semibold mb-4 text-gray-800 dark:text-gray-200">
-            Today's Challenge ({today})
-        </h2>
-        <p className="text-gray-600 dark:text-gray-400">
-          Today's challenge is not available yet. Please check back later!
-        </p>
-        <div className="mt-6 text-center">
-            <Link href="/calendar" className="text-blue-600 dark:text-blue-400 hover:underline">
-                View Past Challenges
-            </Link>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className=" max-w-2xl ml-44">
-      {/* Question Section */}
-      <section className="p-4 border-none bg-[rgb(34,34,34)]">
-        <h2 className='text-2xl md:text-3xl font-bold mb-2 text-gray-200'></h2>
-        <h2 className="text-xl font-bold mb-3 text-gray-200">{challengeData.questionTitle}</h2>
-        <div className=" text-sm prose dark:prose-invert max-w-none text-gray-200">
-          <p>{challengeData.question}</p>
-        </div>
-      </section>
-
-      {/* Input/Output Example Section - overflow-x-auto replaced with block w-fit*/}
-      <section className="p-4 border-none bg-[rgb(34,34,34)]">
-        <h2 className="text-xl font-semibold mb-3 text-gray-100">Example:</h2>
-        <div className="space-y-1">
-        <div className="flex items-start space-x-2">
-  <h3 className="font-medium text-sm text-gray-100 mb-0 ml-1">Input:</h3>
-  <pre
-    className="inline-block bg-[rgb(55,55,55)] p-1 rounded text-xs text-gray-100 m-0 whitespace-pre-wrap"
-  >
-    <code>{challengeData.inputOutput.input}</code>
-  </pre>
-        </div>
-          <div className='flex items-start space-x-2'>
-            <h3 className="font-medium text-sm mb-0 text-gray-100 ml-1">Output:</h3>
-             <pre className="inline-block bg-[rgb(55,55,55)] p-1 rounded text-xs text-gray-100 m-0 whitespace-pre-wrap">
-               <code>{challengeData.inputOutput.output}</code>
-            </pre>
-          </div>
-          <div>
-            <h3 className="text-sm prose mt-3 text-gray-200">Make sure you return your solution, don't print!</h3>
-             
-          </div>
-        </div>
-      </section>
-
-      
-      {/* Solution Section (Consider hiding initially with a button) */}
-      
-    </div>
-  );
-}
 
 
 // Header 
@@ -195,43 +128,32 @@ function LoadingTodaysChallenge() {
   );
 }
 
+
+
 export const runtime = 'edge'
 
 export default async function Home() {
   const today = getTodayDateString();
-  const challengeData = await getChallengeDataForDate(today);
+  const fetchedChallengeData = await getChallengeDataForDate(today); // Data fetching on server
 
-  // Prepare props for CodingEnvironment
-  // Extract raw inputs (handle null challengeData)
-  const rawInputs: string[] = challengeData?.testCases?.map(tc => tc.input) ?? [];
-  // Get reference solution (handle null challengeData)
-  const referenceSolutionCode: string = challengeData?.solution ?? ""; // Provide empty string as fallback
-  // Generate initial code for editor
-  const initialCode = generateInitialCode(challengeData);
- 
+  const rawInputs: string[] = fetchedChallengeData?.testCases?.map(tc => tc.input) ?? [];
+  const referenceSolutionCode: string = fetchedChallengeData?.solution ?? "";
+  const editorSetupCode = generateInitialCode(fetchedChallengeData);
+
   return (
-  <>
-    <Header title="pyassistant"/>
-    <div className="container mx-auto p-4 md:p-8">
-      <h1 className="">
-        
-      </h1>
-      {/* Use Suspense for a better loading experience */}
-      <Suspense fallback={<LoadingTodaysChallenge />}>
-         <TodaysChallenge challengeData={challengeData} />
+    <>
+      <Header title="pyassistant" />
+      <Suspense fallback={<div className="text-center p-10 text-white">Loading Challenge...</div>}>
+        {/* Pass server-fetched data to the Client Component */}
+        <ChallengeInterfaceClient
+          initialChallengeData={fetchedChallengeData}
+          initialEditorSetupCode={editorSetupCode} // Renamed for clarity from "initialEditorCode"
+          rawInputsForEnvironment={rawInputs} // Renamed for clarity
+          referenceSolutionCodeForEnvironment={referenceSolutionCode} // Renamed for clarity
+        />
       </Suspense>
-    </div>
-
-    <div className="flex justify-center items-end ml-28">
-      <div className="w-[600px] h-[500px]">
-        <CodingEnvironment rawInputs={rawInputs} referenceSolutionCode={referenceSolutionCode} initialCode={initialCode}  />
-      </div>
-      <div className="w-[600px] h-[500px] mb-16">
-        <Chat />
-      </div>
-    </div>
-  </>
-)
+    </>
+  );
   
 }
 

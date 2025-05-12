@@ -10,11 +10,26 @@ import type { TestCase, TestExecutionResult } from '@/lib/test-result';
 import { Button } from '@/components/ui/button';
 import { Play, Loader2, CheckCircle, XCircle, AlertTriangle, Cog } from 'lucide-react';
 
+
+// New type for reporting execution state
+export interface ExecutionReport {
+  isExecuting: boolean;
+  result: TestExecutionResult | null;
+  // We'll also need to report test case generation status if the parent is to display it
+  testCaseGenerationStatus: GenerationStatus;
+  testCaseGenerationError: string | null;
+}
+
 // Interface for props
 interface CodingEnvironmentProps {
-  rawInputs: string[];         // <<< Changed: Raw input strings
-  referenceSolutionCode: string; // <<< Added: The correct solution code
-  initialCode?: string;        // Optional: Editor starting code
+  rawInputs: string[];
+  referenceSolutionCode: string;
+  // This is the code that the Editor should initialize with for the current challenge
+  initialCodeForEditor: string;
+  onCodeChange: (newCode: string) => void;
+  // The code currently in the editor, as reported by onCodeChange, used for submission
+  liveEditorCode: string;
+  onExecutionReport: (report: ExecutionReport) => void; // <<< NEW PROP to report execution details
 }
 
 // Default initial code if not provided by props
@@ -30,9 +45,12 @@ type GenerationStatus = 'idle' | 'generating' | 'ready' | 'error';
 export default function CodingEnvironment({
   rawInputs,
   referenceSolutionCode,
-  initialCode = defaultCode, // Use prop or default
+  initialCodeForEditor, // Code for Editor's initial setup for this challenge instance
+  onCodeChange,
+  liveEditorCode,       // Live code from parent, used for submit
+  onExecutionReport,
 }: CodingEnvironmentProps) {
-  const [code, setCode] = useState<string>(initialCode);
+  const [code, setCode] = useState<string>(liveEditorCode);
   const [userTestResult, setUserTestResult] = useState<TestExecutionResult | null>(null); // Result of user code run
   const [isPyodideLoading, setIsPyodideLoading] = useState<boolean>(true);
   const [isExecutingUserCode, setIsExecutingUserCode] = useState<boolean>(false); // Renamed for clarity
@@ -44,12 +62,42 @@ export default function CodingEnvironment({
     const [testCaseGenerationStatus, setTestCaseGenerationStatus] = useState<GenerationStatus>('idle');
     const [testCaseGenerationError, setTestCaseGenerationError] = useState<string | null>(null);
 
+      // Internal state for *current* execution, parent will get the final report
+  const [isInternallyExecuting, setIsInternallyExecuting] = useState<boolean>(false);
+
+
+  // Effect to report test case generation status changes
+  useEffect(() => {
+    onExecutionReport({
+        isExecuting: isInternallyExecuting, // report current execution status
+        result: null, // result is null during test case generation phase
+        testCaseGenerationStatus: testCaseGenerationStatus,
+        testCaseGenerationError: testCaseGenerationError,
+    });
+  }, [testCaseGenerationStatus, testCaseGenerationError, isInternallyExecuting, onExecutionReport]);
+
+   // Effect to reset states when the challenge changes
+  useEffect(() => {
+    // Reset internal execution state, parent will clear its result display
+    setIsInternallyExecuting(false);
+    setGeneratedTestCases(null);
+    setTestCaseGenerationStatus('idle');
+    setTestCaseGenerationError(null);
+    // Initial report for the new challenge
+    onExecutionReport({
+        isExecuting: false,
+        result: null,
+        testCaseGenerationStatus: 'idle',
+        testCaseGenerationError: null,
+    });
+  }, [initialCodeForEditor, onExecutionReport]); // initialCodeForEditor signals new challenge
+
   // Effect to potentially update editor if initialCode prop changes
   useEffect(() => {
-      setCode(initialCode);
+      setCode(liveEditorCode);
       // Optionally, you could trigger a reset of test results here too if desired
        setUserTestResult(null); //hmmmmm
-  }, [initialCode]);
+  }, [liveEditorCode]);
 
 
   // Load Pyodide on component mount
@@ -143,11 +191,19 @@ export default function CodingEnvironment({
     setUserTestResult(null); // Clear previous user results when code changes
   }, []);
 
+    // Effect to reset test results when the challenge changes (signaled by initialCodeForEditor changing)
+  useEffect(() => {
+    setUserTestResult(null);
+    setGeneratedTestCases(null);
+    setTestCaseGenerationStatus('idle');
+    setTestCaseGenerationError(null);
+  }, [initialCodeForEditor]); // Reset if the base code for the challenge changes
+
   const handleSubmitCode = useCallback(async () => {
     // Must have Pyodide, not be executing, no load error, AND test cases must be generated ('ready')
     if (
         !pyodideRef.current ||
-        isExecutingUserCode ||
+        isInternallyExecuting || //isexecuting
         isPyodideLoading ||
         pyodideLoadError ||
         testCaseGenerationStatus !== 'ready' ||
@@ -168,12 +224,25 @@ export default function CodingEnvironment({
 
     console.log("Executing user code with generated test cases...");
      // Use the dynamically generated test cases
-     const result = await runPythonCodeWithTests(pyodideRef.current, code, generatedTestCases);
+     const result = await runPythonCodeWithTests(pyodideRef.current, liveEditorCode, generatedTestCases);
      console.log("User code execution finished. Result:", result);
- 
-     setUserTestResult(result);
-     setIsExecutingUserCode(false);
-   }, [code, generatedTestCases, isExecutingUserCode, isPyodideLoading, pyodideLoadError, testCaseGenerationStatus, testCaseGenerationError]); // Added generation status/error deps
+  setIsInternallyExecuting(false);
+    onExecutionReport({ // Report final result
+        isExecuting: false,
+        result: result,
+        testCaseGenerationStatus: testCaseGenerationStatus,
+        testCaseGenerationError: testCaseGenerationError,
+    });
+   }, [
+       liveEditorCode,
+       generatedTestCases,
+       isInternallyExecuting,
+       isPyodideLoading,
+       pyodideLoadError,
+       testCaseGenerationStatus,
+       testCaseGenerationError, // Added
+       onExecutionReport,
+    ]);
  
  
    // Helper to render test result details for USER'S code
@@ -201,7 +270,7 @@ export default function CodingEnvironment({
      switch (userTestResult.status) {
          case 'success':
              return (
-                 <div className="text-green-400 space-y-2">
+                 <div className="text-green-400 space-y-1">
                      <p className="flex items-center font-semibold"><CheckCircle className="mr-2 h-5 w-5" /> Success!</p>
                      <p>Your code passed all {userTestResult.passedCount} test cases.</p>
                      {/* Optional: Display stdout from user run */}
@@ -210,18 +279,18 @@ export default function CodingEnvironment({
              );
          case 'failed':
               return (
-                  <div className="text-red-400 space-y-2">
+                  <div className="text-red-400 space-y-1">
                      <p className="flex items-center font-semibold"><XCircle className="mr-2 h-5 w-5" /> Test Case {userTestResult.testCaseNumber} Failed</p>
-                     <div><span className="font-medium text-gray-300">Input:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.input}</pre></div>
-                     <div><span className="font-medium text-gray-300">Expected:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.expectedOutput}</pre></div>
-                     <div><span className="font-medium text-gray-300">Output:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.actualOutput}</pre></div>
-                     {userTestResult.error && (<div><span className="font-medium text-gray-300">Runtime Error:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.error}</pre></div>)}
-                     {userTestResult.stdout && (<div><span className="font-medium text-gray-300">Your Captured Output (stdout/stderr):</span><pre className="inline bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.stdout}</pre></div>)}
+                     <div><span className="font-medium text-gray-300 text-xs">Input:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.input}</pre></div>
+                     <div><span className="font-medium text-gray-300 text-xs">Expected:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.expectedOutput}</pre></div>
+                     <div><span className="font-medium text-gray-300 text-xs">Output:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.actualOutput}</pre></div>
+                     {userTestResult.error && (<div><span className="font-medium text-gray-300 text-xs">Runtime Error:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.error}</pre></div>)}
+                     {userTestResult.stdout && (<div><span className="font-medium text-gray-300 text-xs">Your Captured Output (stdout/stderr):</span><pre className="inline bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.stdout}</pre></div>)}
                   </div>
               );
          case 'error':
               return (
-                  <div className="text-orange-400 space-y-2">
+                  <div className="text-orange-400 space-y-1">
                       <p className="flex items-center font-semibold"><AlertTriangle className="mr-2 h-5 w-5" /> Execution Error</p>
                      <p>Could not run tests on your code due to an error:</p>
                      <pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.message}</pre>
@@ -239,7 +308,7 @@ export default function CodingEnvironment({
        if (pyodideLoadError) return { disabled: true, content: <><AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Error</> };
        if (testCaseGenerationStatus === 'generating') return { disabled: true, content: <><Cog className="mr-2 h-4 w-4 animate-spin" /> Preparing Tests...</> };
        if (testCaseGenerationStatus === 'error') return { disabled: true, content: <><AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Test Prep Error</> };
-       if (isExecutingUserCode) return { disabled: true, content: <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Code...</> };
+       if (isInternallyExecuting) return { disabled: true, content: <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Code...</> };
        // Ready to submit
        return { disabled: false, content: <><Play className=" h-4 w-4 text-green-700 !size-5" /><span className="text-green-700 text-lg font-sans-serif">Submit</span></> };
    };
@@ -251,7 +320,7 @@ export default function CodingEnvironment({
        {/* Editor Section */}
        <div className="w-full flex flex-col" style={{ height: EDITOR_HEIGHT }}>
          <div className="flex-grow">
-             <Editor initialCode={code} onCodeChange={handleCodeChange} />
+             <Editor initialCode={initialCodeForEditor} onCodeChange={onCodeChange} />
          </div>
           <div className="mt-2 flex justify-end pr-24 pb-2">
              <Button
@@ -266,12 +335,7 @@ export default function CodingEnvironment({
           </div>
        </div>
  
-       {/* Output/Results Section */}
-       <div className="w-[250px] flex flex-row bg-[rgb(55,55,55)] text-white rounded mt-2">
-   <div className="p-2 text-sm font-mono h-auto">
-              <RenderUserTestResult /> {/* Use the helper component */}
-           </div>
-       </div>
+       
      </div>
    );
  }

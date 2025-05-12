@@ -9,70 +9,69 @@ import { materialDark, materialDarkInit } from '@uiw/codemirror-theme-material'
 import { indentWithTab } from '@codemirror/commands';
 import { keymap } from '@codemirror/view';
 import React from 'react';
+import { EditorState } from '@codemirror/state'; // Import EditorState
 
 interface EditorProps {
-  initialCode?: string;
-  onCodeChange?: (code: string) => void;
+  initialCode: string; // Renamed to be more explicit
+  onCodeChange: (code: string) => void;
+
 }
 
-const defaultInitialCode = `def solve():
-    pass
-`;
 
 export default function Editor({
-  initialCode = defaultInitialCode,
+  initialCode,
   onCodeChange,
+  
 }: EditorProps) {
+  
   const editorRef = useRef<HTMLDivElement>(null);
   const viewRef = useRef<EditorView | null>(null);
+  // To prevent re-initializing the editor on every parent re-render if only onCodeChange callback instance changed
+  const onCodeChangeRef = useRef(onCodeChange);
+  useEffect(() => {
+    onCodeChangeRef.current = onCodeChange;
+  }, [onCodeChange]);
 
   useEffect(() => {
-    // Ensure effect runs only once per component mount correctly
     if (editorRef.current && !viewRef.current) {
-        const view = new EditorView({
-            doc: initialCode,
-            extensions: [
-            basicSetup,
-            python(),
-            keymap.of([indentWithTab]),
-            andromedaInit(),
-            andromeda,
-            EditorView.updateListener.of((update) => {
-                if (update.docChanged && onCodeChange) {
-                onCodeChange(update.state.doc.toString());
-                }
-            }),
-            // Make CodeMirror fill its container height
+      console.log("Editor.tsx: Initializing EditorView with:", initialCode);
+      const startState = EditorState.create({
+        doc: initialCode,
+        extensions: [
+          basicSetup,
+          python(),
+          keymap.of([indentWithTab]),
+          andromedaInit(),
+          andromeda,
+          EditorView.updateListener.of((update) => {
+            if (update.docChanged) {
+              onCodeChangeRef.current(update.state.doc.toString());
+            }
+          }),
             EditorView.theme({
                 "&": { height: "100%" },
                 ".cm-scroller": { overflow: "auto" }
             })
             ],
-            parent: editorRef.current,
+            
         });
-        viewRef.current = view;
-
-        if (onCodeChange) {
-            onCodeChange(initialCode);
-        }
+         const view = new EditorView({
+        state: startState,
+        parent: editorRef.current,
+      });
+      viewRef.current = view;
+      onCodeChangeRef.current(initialCode);
     }
 
+     // This cleanup is important
     return () => {
-        viewRef.current?.destroy();
+      if (viewRef.current) {
+        console.log("Editor.tsx: Destroying EditorView");
+        viewRef.current.destroy();
         viewRef.current = null;
-    };
-    // Only depend on onCodeChange for re-running if needed
-    // initialCode prop changes are handled by the second useEffect
-  }, [onCodeChange]); // Removed initialCode dependency here
-
-  // Handle external changes to initialCode after mount
-  useEffect(() => {
-      if (viewRef.current && initialCode !== viewRef.current.state.doc.toString()) {
-          viewRef.current.dispatch({
-              changes: { from: 0, to: viewRef.current.state.doc.length, insert: initialCode }
-          });
       }
-  }, [initialCode]);
+    };
+  }, []);
 
 
   // Removed fixed height/width here, rely on parent container's styling
