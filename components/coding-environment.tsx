@@ -310,32 +310,36 @@ export default function CodingEnvironment({
        if (testCaseGenerationStatus === 'error') return { disabled: true, content: <><AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Test Prep Error</> };
        if (isInternallyExecuting) return { disabled: true, content: <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Code...</> };
        // Ready to submit
-       return { disabled: false, content: <><Play className=" h-4 w-4 text-green-700 !size-5" /><span className="text-green-700 text-lg font-sans-serif">Submit</span></> };
+       return { disabled: false, content: <><Play className=" text-green-700 " /><span className="text-green-700 text-lg font-sans-serif">Submit</span></> };
    };
  
    const buttonState = getButtonState();
  
-   return (
-     <div className="flex flex-col w-full" style={{ height: TOTAL_ENVIRONMENT_HEIGHT }}>
-       {/* Editor Section */}
-       <div className="w-full flex flex-col" style={{ height: EDITOR_HEIGHT }}>
-         <div className="flex-grow">
-             <Editor initialCode={initialCodeForEditor} onCodeChange={onCodeChange} />
-         </div>
-          <div className="mt-2 flex justify-end pr-24 pb-2">
-             <Button
-                 onClick={handleSubmitCode}
-                 disabled={buttonState.disabled}
-                 //size="lg"
-                 variant="outline"
-                 className='bg-[rgb(55,55,55)] border rounded-xl border-[rgb(44,44,44)] hover:bg-[rgb(75,75,75)] disabled:opacity-60 px-5 py-5' // Added disabled style
-             >
-                 {buttonState.content}
-             </Button>
-          </div>
-       </div>
- 
-       
-     </div>
-   );
+     return (
+    <div className="flex flex-col w-full" style={{ height: TOTAL_ENVIRONMENT_HEIGHT }}>
+      {/* Editor + footer */}
+      <div className="relative w-full" style={{ height: EDITOR_HEIGHT }}>
+        {/* fill the wrapper */}
+        <div className="h-full">
+          <Editor
+            initialCode={initialCodeForEditor}
+            onCodeChange={onCodeChange}
+          />
+        </div>
+        {/* footer button, absolute to bottom-right */}
+        <div className="absolute bottom-3 right-28">
+          <Button
+            onClick={handleSubmitCode}
+            disabled={buttonState.disabled}
+            variant="outline"
+            className="bg-[rgb(55,55,55)] border rounded-xl border-[rgb(44,44,44)]
+                       hover:bg-[rgb(75,75,75)] disabled:opacity-60
+                       px-5 py-2"
+          >
+            {buttonState.content}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
  }

@@ -102,7 +102,7 @@ export default function ChallengeInterfaceClient({
       // Helper to render test result details (moved from CodingEnvironment)
   const RenderUserTestResult = () => {
     if (currentTestCaseGenStatus === 'generating') {
-       return <p className="text-yellow-400 flex items-center"><Cog className="mr-2 h-4 w-4 animate-spin" /> Preparing Test Cases...</p>;
+       return <p className="text-yellow-400 flex items-center"><Cog className="mr-2 h-4 w-4 animate-spin" /></p>;
     }
     if (currentTestCaseGenStatus === 'error') {
         return <p className="text-red-400 flex items-center"><AlertTriangle className="mr-2 h-4 w-4" /> Error Preparing Tests: {currentTestCaseGenError || 'Unknown error'}</p>;

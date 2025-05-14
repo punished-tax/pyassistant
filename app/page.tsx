@@ -17,7 +17,7 @@ import ChallengeInterfaceClient from '@/components/challenge-interface'; // We w
 export const metadata = {
   title: "pyassistant",
   description: "Daily Python Coding Challenges",
-  icons: { icon: '/favicon.ico' }
+  icons: { icon: '/android-chrome-192x192.png' }
 };
 
 export const revalidate = 86400; // 24 hours
@@ -75,7 +75,7 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
                 <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>About PyAssistant</DialogTitle>
                 
               </DialogHeader>
-              <p>PyAssistant is a daily coding game in the spirit of Leetcode and Wordle. It has curated questions from ChatGPT, as well as a chatbot to help you get a headstart in solving problems. </p>
+              <p>PyAssistant is a daily coding game in the spirit of Leetcode and Wordle. The questions are fetched from ChatGPT and the chatbot can help you get a headstart in solving problems, or even analyze the code you've written so far. </p>
             </DialogContent>
           </Dialog>
         </div>
