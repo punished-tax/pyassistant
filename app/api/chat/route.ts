@@ -8,7 +8,7 @@ export const runtime = 'edge';
 // Explicitly get the fetch from the global scope in Cloudflare Workers
 // This ensures we're using the Worker's native fetch.
 // globalThis is standard in modern JS environments, including Workers.
-const workerFetch = globalThis.fetch;
+const workerFetch = fetch.bind(globalThis)
 
 export async function POST(req: Request) {
   const timestamp = new Date().toISOString();
