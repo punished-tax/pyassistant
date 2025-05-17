@@ -11,7 +11,7 @@ import { SendHorizontalIcon, Code2Icon } from 'lucide-react' // Added Code2Icon
 import CopytoClipboard from './ui/copy-to-clipboard'
 import type { ChallengeData } from '@/lib/challenges'; // Import ChallengeData type
 
-export const runtime = 'edge'
+//export const runtime = 'edge'
 // Props for the Chat component
 interface ChatProps {
   challengeData: ChallengeData | null;
