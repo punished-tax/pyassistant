@@ -10,7 +10,8 @@ import { Suspense } from 'react';
 // Revalidate daily - ensures if today's challenge is added later in the day,
 // visiting the page will eventually show it after the first fetch misses.
 // Also good practice for ISR in general.
-export const revalidate = 86400;
+//export const revalidate = 86400;
+export const runtime = 'edge'
 
 interface ChallengePageProps {
   params: {
