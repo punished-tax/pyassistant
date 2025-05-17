@@ -8,7 +8,7 @@ import {
     DialogHeader,
     DialogTitle,
   } from '@/components/ui/dialog'
-  import { BadgeHelp, Play, Dices } from 'lucide-react'
+  import { BadgeHelp, Dices } from 'lucide-react'
 
 
 // Header 

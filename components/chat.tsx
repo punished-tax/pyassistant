@@ -1,7 +1,7 @@
 // chat.tsx
 'use client'
 
-import { useChat, Message } from '@ai-sdk/react' // Added Message type
+import { useChat } from '@ai-sdk/react' // Added Message type
 import { useEffect, useRef, useState } from 'react' // Added useState
 import { Input } from './ui/input'
 import { Button } from './ui/button'

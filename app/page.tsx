@@ -9,7 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { BadgeHelp, icons, Dices } from 'lucide-react'
+import { BadgeHelp, Dices } from 'lucide-react'
 import { getChallengeDataForDate, ChallengeData } from '@/lib/challenges';
 import Link from 'next/link';
 import ChallengeInterfaceClient from '@/components/challenge-interface'; // We will create this

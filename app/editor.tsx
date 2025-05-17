@@ -1,11 +1,11 @@
 // src/app/editor.tsx
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { EditorView, basicSetup } from 'codemirror';
 import { python } from '@codemirror/lang-python';
-import { tokyoNight, tokyoNightInit } from '@uiw/codemirror-theme-tokyo-night';
+//import { tokyoNight, tokyoNightInit } from '@uiw/codemirror-theme-tokyo-night';
 import { andromeda, andromedaInit } from '@uiw/codemirror-theme-andromeda'
-import { materialDark, materialDarkInit } from '@uiw/codemirror-theme-material'
+//import { materialDark, materialDarkInit } from '@uiw/codemirror-theme-material'
 import { indentWithTab } from '@codemirror/commands';
 import { keymap } from '@codemirror/view';
 import React from 'react';

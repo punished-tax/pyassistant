@@ -6,7 +6,7 @@ import type { ChallengeData } from '@/lib/challenges';
 import Chat from '@/components/chat'; // Assuming chat.tsx is correctly set up for client
 import CodingEnvironment, { ExecutionReport } from '@/components/coding-environment'; // Import ExecutionReport
 import type { TestExecutionResult } from '@/lib/test-result'; // Import TestExecutionResult for state typing
-import { Loader2, CheckCircle, XCircle, AlertTriangle, Cog } from 'lucide-react'; // Icons for results display
+import { Loader2, CheckCircle, AlertTriangle, Cog } from 'lucide-react'; // Icons for results display
 // Props for the client wrapper
 interface ChallengeInterfaceClientProps {
   initialChallengeData: ChallengeData | null;

@@ -1,7 +1,7 @@
 // app/challenge/[date]/page.tsx
 
 import { getChallengeDataForDate } from '@/lib/challenges';
-import type { ChallengeData } from '@/lib/challenges';
+//import type { ChallengeData } from '@/lib/challenges';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Metadata } from 'next';
