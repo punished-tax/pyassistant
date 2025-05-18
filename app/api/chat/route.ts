@@ -1,6 +1,6 @@
 // route.ts
 import { createOpenAI } from '@ai-sdk/openai';
-import { streamText, CoreMessage } from 'ai';
+import { streamText, CoreMessage } from 'ai'; // Import actual part types later
 
 export const maxDuration = 300;
 export const runtime = 'edge';
@@ -27,112 +27,86 @@ export async function POST(req: Request) {
       console.error(`[${timestamp}] fullStream is not a valid ReadableStream.`);
       throw new Error('fullStream is not a valid ReadableStream.');
     }
-    console.log(`[${timestamp}] fullStream is a ReadableStream. Attempting to get reader.`);
+    console.log(`[${timestamp}] fullStream is a ReadableStream.`);
 
-    let reader: ReadableStreamDefaultReader<any>;
-    try {
-      reader = sourceStream.getReader();
-      console.log(`[${timestamp}] Successfully obtained reader from fullStream.`);
-    } catch (e: any) {
-      console.error(`[${timestamp}] Error calling sourceStream.getReader(): ${e.message}`, e);
-      throw e; // Re-throw to be caught by outer catch
-    }
-
-    // Try one read to see if that's the issue
-    // This will be done outside the main response path for now for debugging.
-    // We will not pipe it yet, just see if we can read.
-    try {
-        console.log(`[${timestamp}] Attempting first reader.read().`);
-        const { done, value: firstPart } = await reader.read();
-        console.log(`[${timestamp}] First reader.read() successful. Done: ${done}, Part:`, firstPart);
-        // If successful, release the lock so the stream can potentially be used later,
-        // though for this test, we might just stop.
-        if (!done) {
-            reader.releaseLock();
-            // If we were to continue, we'd need to re-get the reader or pass this part.
-            // For now, just proving we can read is enough.
-            // We might need to "unread" this part if we want the TransformStream to get it.
-            // Or, pass 'firstPart' to the TransformStream setup if we proceed.
-            console.log(`[${timestamp}] Lock released after successful first read.`);
-        } else {
-            console.log(`[${timestamp}] Stream was already done on first read.`);
-        }
-    } catch (e: any) {
-        console.error(`[${timestamp}] Error during first reader.read(): ${e.message}`, e);
-        try { reader.releaseLock(); } catch (rlError) { console.error("Error releasing lock after read error:", rlError); }
-        throw e; // Re-throw
-    }
-
-    // If the above worked, the "Illegal invocation" is happening later,
-    // likely related to TransformStream or returning its readable in the Response.
-    // For now, to simplify, let's just return a dummy response if the read works.
-    // If the error happens before this, we'll know it's in getReader or the first read.
-
-    console.log(`[${timestamp}] First read test passed. Proceeding to create TransformStream and pipe.`);
+    // Get the reader ONCE
+    const reader = sourceStream.getReader();
+    console.log(`[${timestamp}] Successfully obtained THE reader from fullStream.`);
 
     const encoder = new TextEncoder();
     const transformStream = new TransformStream<any, Uint8Array>({
       start() { console.log(`[${timestamp}] TransformStream started.`); },
       async transform(chunk, controller) {
-        console.log(`[${timestamp}] Transforming chunk (type: ${chunk?.type}):`, chunk);
-        // ... (transform logic as before)
+        // CRUCIAL LOG - to see the parts that make it here
+        console.log(`[${timestamp}] TransformStream: Transforming chunk (type: ${chunk?.type}):`, chunk);
         try {
           if (chunk && typeof chunk.type === 'string') {
             switch (chunk.type) {
+              case 'step-start': // From your log
+                // You might want to log this or decide if it needs to go to client
+                console.log(`[${timestamp}] Transform: step-start received. Content:`, (chunk as any).messageId, (chunk as any).request);
+                // Example: forward as a custom data message if your client handles '9:'
+                // controller.enqueue(encoder.encode(`9:${JSON.stringify({type: 'step-start', data: chunk})}\n`));
+                break;
               case 'text-delta':
                 controller.enqueue(encoder.encode(`0:"${JSON.stringify((chunk as any).textDelta || (chunk as any).value).slice(1, -1)}"\n`));
                 break;
               case 'error':
-                console.error(`[${timestamp}] Stream error part from transform:`, (chunk as any).error);
+                console.error(`[${timestamp}] Transform: Stream error part:`, (chunk as any).error);
                 controller.enqueue(encoder.encode(`1:"${JSON.stringify(String((chunk as any).error)).slice(1,-1)}"\n`));
                 break;
               case 'finish':
                 const finishChunk = chunk as any;
-                if (finishChunk.finishReason && finishChunk.usage) { /* ... */ }
-                else if (finishChunk.finishReason) { /* ... */ }
+                if (finishChunk.finishReason && finishChunk.usage) {
+                  controller.enqueue(encoder.encode(`2:${JSON.stringify({ finishReason: finishChunk.finishReason, usage: finishChunk.usage })}\n`));
+                } else if (finishChunk.finishReason) {
+                  controller.enqueue(encoder.encode(`2:${JSON.stringify({ finishReason: finishChunk.finishReason })}\n`));
+                }
                 break;
-              default: console.warn(`Unhandled type: ${chunk.type}`); break;
+              // Add other cases based on the types you see in the "Transforming chunk" log
+              default:
+                console.warn(`[${timestamp}] Transform: Unhandled stream part type: ${chunk.type}`, chunk);
+                break;
             }
-          } else { console.warn(`Chunk without type:`, chunk); }
-        } catch (e: any) { console.error(`Transform error: ${e.message}`, e); controller.error(e); }
+          } else { console.warn(`[${timestamp}] Transform: Received chunk without type or null/undefined:`, chunk); }
+        } catch (e: any) { console.error(`[${timestamp}] Transform: Error: ${e.message}`, e); controller.error(e); }
       },
       flush() { console.log(`[${timestamp}] TransformStream flushed.`); }
     });
-    console.log(`[${timestamp}] TransformStream created.`);
+    console.log(`[${timestamp}] TransformStream created. Setting up piping IIFE.`);
 
-    // Re-get the reader because we released the lock, or adapt to use firstPart
-    // For simplicity in this test, let's assume we'd re-get or the stream allows multiple readers (it doesn't without teeing)
-    // A more correct approach would be to pass `firstPart` to the transform logic if `!done`
-    // or start the piping loop immediately.
-    // Let's just re-get reader for THIS TEST to keep the piping IIFE structure
+    // Piping IIFE - uses the SINGLE reader obtained above
     (async () => {
-      let currentReader = sourceStream.getReader(); // Get a new reader
       const writer = transformStream.writable.getWriter();
-      console.log(`[${timestamp}] Piping IIFE: Obtained new reader. Starting read loop.`);
+      console.log(`[${timestamp}] Piping IIFE: Using THE reader. Starting read loop.`);
       try {
-        // If firstPart was read and !done, it should be written first.
-        // This simplified test doesn't handle that handoff perfectly yet.
-        // This loop will re-read from the beginning if the stream supports it,
-        // or from where the previous lock was released.
         while (true) {
-          const { done, value: part } = await currentReader.read();
-          if (done) { console.log(`[${timestamp}] Piping IIFE: Reader 'done'.`); break; }
+          // Use THE reader
+          const { done, value: part } = await reader.read();
+          if (done) {
+            console.log(`[${timestamp}] Piping IIFE: Reader reported 'done'.`);
+            break;
+          }
+          // This log is now very important!
+          console.log(`[${timestamp}] Piping IIFE: Read part, writing to transform: `, part);
           writer.write(part);
         }
         console.log(`[${timestamp}] Piping IIFE: Loop finished. Closing writer.`);
         await writer.close();
       } catch (e: any) {
-        console.error(`[${timestamp}] Piping IIFE: Error: ${e.message}`, e);
-        // currentReader.releaseLock(); // Handled by reader itself or finally
+        console.error(`[${timestamp}] Piping IIFE: Error in read loop: ${e.message}`, e);
+        // Don't releaseLock here, reader.read() throwing should handle it,
+        // or the stream is now broken. The reader becomes useless.
         if (writer.desiredSize !== null) {
           try { await writer.abort(e); } catch (ae) { console.error("Error aborting writer:", ae); }
         }
       } finally {
-        console.log(`[${timestamp}] Piping IIFE: Exited loop processing.`);
-        // currentReader.releaseLock(); // Should be released if loop breaks/errors.
+        console.log(`[${timestamp}] Piping IIFE: Exited read loop processing. Releasing THE reader's lock.`);
+        // Always release the lock for THE reader when done with it.
+        reader.releaseLock();
       }
     })();
-    console.log(`[${timestamp}] Piping setup. Returning Response.`);
+    console.log(`[${timestamp}] Piping setup complete. Returning Response.`);
 
     return new Response(transformStream.readable, {
       headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Content-Type-Options': 'nosniff' },
@@ -140,7 +114,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error(`[${timestamp}] Critical error in POST handler: ${error.message}`, error);
-    // ... (error response)
     return new Response(JSON.stringify({ error: 'Failed to process request.', message: error.message || 'Unknown server error' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     });
