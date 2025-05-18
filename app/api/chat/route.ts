@@ -1,6 +1,6 @@
 // route.ts
 import { createOpenAI } from '@ai-sdk/openai';
-import { streamText, CoreMessage } from 'ai'; // Import actual part types later
+import { streamText, CoreMessage } from 'ai';
 
 export const maxDuration = 300;
 export const runtime = 'edge';
@@ -29,87 +29,45 @@ export async function POST(req: Request) {
     }
     console.log(`[${timestamp}] fullStream is a ReadableStream.`);
 
-    // Get the reader ONCE
     const reader = sourceStream.getReader();
-    console.log(`[${timestamp}] Successfully obtained THE reader from fullStream.`);
+    console.log(`[${timestamp}] Successfully obtained reader from fullStream.`);
 
-    const encoder = new TextEncoder();
-    const transformStream = new TransformStream<any, Uint8Array>({
-      start() { console.log(`[${timestamp}] TransformStream started.`); },
-      async transform(chunk, controller) {
-        // CRUCIAL LOG - to see the parts that make it here
-        console.log(`[${timestamp}] TransformStream: Transforming chunk (type: ${chunk?.type}):`, chunk);
-        try {
-          if (chunk && typeof chunk.type === 'string') {
-            switch (chunk.type) {
-              case 'step-start': // From your log
-                // You might want to log this or decide if it needs to go to client
-                console.log(`[${timestamp}] Transform: step-start received. Content:`, (chunk as any).messageId, (chunk as any).request);
-                // Example: forward as a custom data message if your client handles '9:'
-                // controller.enqueue(encoder.encode(`9:${JSON.stringify({type: 'step-start', data: chunk})}\n`));
-                break;
-              case 'text-delta':
-                controller.enqueue(encoder.encode(`0:"${JSON.stringify((chunk as any).textDelta || (chunk as any).value).slice(1, -1)}"\n`));
-                break;
-              case 'error':
-                console.error(`[${timestamp}] Transform: Stream error part:`, (chunk as any).error);
-                controller.enqueue(encoder.encode(`1:"${JSON.stringify(String((chunk as any).error)).slice(1,-1)}"\n`));
-                break;
-              case 'finish':
-                const finishChunk = chunk as any;
-                if (finishChunk.finishReason && finishChunk.usage) {
-                  controller.enqueue(encoder.encode(`2:${JSON.stringify({ finishReason: finishChunk.finishReason, usage: finishChunk.usage })}\n`));
-                } else if (finishChunk.finishReason) {
-                  controller.enqueue(encoder.encode(`2:${JSON.stringify({ finishReason: finishChunk.finishReason })}\n`));
-                }
-                break;
-              // Add other cases based on the types you see in the "Transforming chunk" log
-              default:
-                console.warn(`[${timestamp}] Transform: Unhandled stream part type: ${chunk.type}`, chunk);
-                break;
-            }
-          } else { console.warn(`[${timestamp}] Transform: Received chunk without type or null/undefined:`, chunk); }
-        } catch (e: any) { console.error(`[${timestamp}] Transform: Error: ${e.message}`, e); controller.error(e); }
-      },
-      flush() { console.log(`[${timestamp}] TransformStream flushed.`); }
-    });
-    console.log(`[${timestamp}] TransformStream created. Setting up piping IIFE.`);
-
-    // Piping IIFE - uses the SINGLE reader obtained above
+    // Fire-and-forget async IIFE to read the stream and log
+    // NO TransformStream, NO piping to response yet.
     (async () => {
-      const writer = transformStream.writable.getWriter();
-      console.log(`[${timestamp}] Piping IIFE: Using THE reader. Starting read loop.`);
+      console.log(`[${timestamp}] DEBUG IIFE: Starting to read from sourceStream.`);
       try {
+        let partCount = 0;
         while (true) {
-          // Use THE reader
-          const { done, value: part } = await reader.read();
+          console.log(`[${timestamp}] DEBUG IIFE: Attempting reader.read() #${partCount + 1}`);
+          const { done, value: part } = await reader.read(); // THE SUSPECTED LINE
+          console.log(`[${timestamp}] DEBUG IIFE: reader.read() #${partCount + 1} successful. Done: ${done}`);
+
           if (done) {
-            console.log(`[${timestamp}] Piping IIFE: Reader reported 'done'.`);
+            console.log(`[${timestamp}] DEBUG IIFE: Stream finished.`);
             break;
           }
-          // This log is now very important!
-          console.log(`[${timestamp}] Piping IIFE: Read part, writing to transform: `, part);
-          writer.write(part);
+          console.log(`[${timestamp}] DEBUG IIFE: Part #${partCount + 1} (type: ${part?.type}):`, part);
+          partCount++;
+          if (partCount >= 5) { // Limit parts for this test
+            console.log(`[${timestamp}] DEBUG IIFE: Reached part limit for test. Cancelling stream.`);
+            await reader.cancel("Test limit reached");
+            break;
+          }
         }
-        console.log(`[${timestamp}] Piping IIFE: Loop finished. Closing writer.`);
-        await writer.close();
       } catch (e: any) {
-        console.error(`[${timestamp}] Piping IIFE: Error in read loop: ${e.message}`, e);
-        // Don't releaseLock here, reader.read() throwing should handle it,
-        // or the stream is now broken. The reader becomes useless.
-        if (writer.desiredSize !== null) {
-          try { await writer.abort(e); } catch (ae) { console.error("Error aborting writer:", ae); }
-        }
+        console.error(`[${timestamp}] DEBUG IIFE: Error during read loop: ${e.message}`, e);
       } finally {
-        console.log(`[${timestamp}] Piping IIFE: Exited read loop processing. Releasing THE reader's lock.`);
-        // Always release the lock for THE reader when done with it.
+        console.log(`[${timestamp}] DEBUG IIFE: Read loop finished/exited. Releasing lock.`);
         reader.releaseLock();
       }
     })();
-    console.log(`[${timestamp}] Piping setup complete. Returning Response.`);
 
-    return new Response(transformStream.readable, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8', 'X-Content-Type-Options': 'nosniff' },
+    console.log(`[${timestamp}] DEBUG IIFE launched. Returning simple text response.`);
+    // Return a completely unrelated, simple response
+    return new Response("Test response: Stream processing started in background.", {
+      status: 200,
+      headers: { 'Content-Type': 'text/plain' },
     });
 
   } catch (error: any) {
