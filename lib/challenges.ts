@@ -1,34 +1,32 @@
 // lib/challenges.ts
-
 import OpenAI from 'openai';
+import { kv } from '@vercel/kv'; // Import Vercel KV
 
-// 1. Update the ChallengeData Interface
+// ChallengeData interface remains the same
 export interface ChallengeData {
   id: string;
   date: string; // YYYY-MM-DD
   difficulty: 'medium';
   question: string;
   questionTitle: string;
-  inputOutput: { // The main example shown to the user
+  inputOutput: {
     input: string;
     output: string;
   };
-  solutionHeader: string; // <<< Added: The function signature (e.g., "def solve(nums: list[int]) -> int:")
-  solution: string;       // The full Python code solution
+  solutionHeader: string;
+  solution: string;
   explanation: string;
-  testCases: Array<{      // <<< Added: Array for test cases
+  testCases: Array<{
     input: string;
     output: string;
   }>;
 }
 
-// Ensure your API key is loaded correctly from environment variables
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-// 2. Define the *NEW* expected JSON structure for the AI response
-//    Includes solutionHeader and testCases array
+// desiredJsonStructure remains the same
 const desiredJsonStructure = `{
   "id": "string (use the date YYYY-MM-DD)",
   "date": "string (the requested date YYYY-MM-DD)",
@@ -39,8 +37,7 @@ const desiredJsonStructure = `{
     "input": "string (a single, clear sample input for display)",
     "output": "string (the corresponding sample output for display)"
   },
-  "solutionHeader": "string (The Python function signature needed for the solution, the function HAS to be named 'solve')
-",
+  "solutionHeader": "string (The Python function signature needed for the solution, the function HAS to be named 'solve')",
   "solution": "string (a correct Python code solution including the 'solve' function defined by solutionHeader)",
   "explanation": "string (a clear explanation of the Python solution approach)",
   "testCases": [
@@ -52,21 +49,51 @@ const desiredJsonStructure = `{
   ]
 }`;
 
+
 export async function getChallengeDataForDate(date: string): Promise<ChallengeData | null> {
-  if (!process.env.OPENAI_API_KEY) {
-    console.error("OPENAI_API_KEY environment variable not set.");
+  // Basic validation for the date string format
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    console.error("Invalid date format provided to getChallengeDataForDate. Expected YYYY-MM-DD. Received:", date);
     return null;
   }
 
-  console.log(`Requesting challenge data from OpenAI for date: ${date}`);
+  const cacheKey = `challenge:${date}`; // e.g., challenge:2023-10-27
+  const availableDatesSetKey = 'meta:available_challenge_dates'; // Key for the set storing all dates
+
+  try {
+    console.log(`Attempting to fetch challenge for ${date} from Vercel KV cache (key: ${cacheKey}).`);
+    const cachedData = await kv.get<ChallengeData>(cacheKey);
+    if (cachedData) {
+      // Optional: Add a quick validation for cached data structure
+      if (cachedData.id === date && cachedData.question && cachedData.solution) {
+        console.log(`Serving challenge data for ${date} from Vercel KV cache.`);
+        return cachedData;
+      } else {
+         console.warn(`Cached data for ${date} (key: ${cacheKey}) seems incomplete or mismatched. Will attempt to fetch fresh data.`);
+         // Optionally, you could delete the bad cache entry: await kv.del(cacheKey);
+      }
+    } else {
+        console.log(`No cache found for ${date} (key: ${cacheKey}) in Vercel KV.`);
+    }
+  } catch (error) {
+    console.error(`Error fetching from Vercel KV for date ${date} (key: ${cacheKey}):`, error);
+    // Continue to attempt fetch from OpenAI if KV read fails
+  }
+
+  // If not in cache or cache was invalid, fetch from OpenAI
+  if (!process.env.OPENAI_API_KEY) {
+    console.error("OPENAI_API_KEY environment variable not set. Cannot fetch from OpenAI.");
+    return null;
+  }
+
+  console.log(`Requesting NEW challenge data from OpenAI for date: ${date}`);
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // Or "gpt-4o" if mini struggles with the larger structure
+      model: "gpt-3.5-turbo",
       messages: [
         {
           role: "system",
-          // 3. Update the System Prompt to reflect the new structure
           content: `You are an assistant that generates daily Python coding challenges (difficulty: medium) about lists, strings, or more advanced data structures. You ALWAYS respond with ONLY a valid JSON object matching this exact structure: ${desiredJsonStructure}. Do not include any introductory text, markdown formatting (like \`\`\`json), comments, or explanations outside the JSON structure itself. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. unless imported from the typing module. Provide exactly 5 distinct 'testCases' in the specified array format, ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'.`
         },
         {
@@ -75,7 +102,7 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
         },
       ],
       temperature: 0.6,
-      max_tokens: 2500, // <<< Increased max_tokens significantly due to more examples and stricter structure
+      max_tokens: 2500,
       response_format: { type: "json_object" }
     });
 
@@ -86,8 +113,7 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
       return null;
     }
 
-    // --- Parse and Validate the Response ---
-    let parsedData: Partial<ChallengeData>; // Use Partial initially
+    let parsedData: Partial<ChallengeData>;
     try {
       parsedData = JSON.parse(content);
     } catch (parseError) {
@@ -96,42 +122,35 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
       return null;
     }
 
-    // 4. Update Validation - Check required fields including the new ones
     const isValidTestCase = (tc: any): tc is { input: string; output: string } =>
         tc && typeof tc.input === 'string' && typeof tc.output === 'string';
 
+    // Rigorous validation, ensure date from AI matches requested date
     if (
         !parsedData.question ||
         !parsedData.questionTitle ||
         !parsedData.inputOutput?.input ||
         !parsedData.inputOutput?.output ||
-        !parsedData.solutionHeader || // <<< Check new field
+        !parsedData.solutionHeader ||
         !parsedData.solution ||
         !parsedData.explanation ||
-        !parsedData.testCases || // <<< Check new field
-        !Array.isArray(parsedData.testCases) || // <<< Check it's an array
-        parsedData.testCases.length !== 5 || // <<< Check for exactly 5 test cases
-        !parsedData.testCases.every(isValidTestCase) || // <<< Check each test case structure
+        !parsedData.testCases ||
+        !Array.isArray(parsedData.testCases) ||
+        parsedData.testCases.length !== 5 ||
+        !parsedData.testCases.every(isValidTestCase) ||
         parsedData.difficulty !== 'medium' ||
-        parsedData.date !== date
+        parsedData.date !== date // Crucial check: AI must use the requested date
     ) {
         console.error(`Invalid or incomplete data structure received from OpenAI for date ${date}. Validation failed.`);
-        // Log the specific part that might be failing:
-        if (!parsedData.testCases) console.error("-> Missing testCases field.");
-        else if (!Array.isArray(parsedData.testCases)) console.error("-> testCases is not an array.");
-        else if (parsedData.testCases.length !== 5) console.error(`-> Expected 5 test cases, got ${parsedData.testCases.length}.`);
-        else if (!parsedData.testCases.every(isValidTestCase)) console.error("-> One or more test cases have invalid structure (missing input/output string).");
-        if (!parsedData.solutionHeader) console.error("-> Missing solutionHeader field.");
-        // Log the received data for deeper inspection
-        console.error("Received data:", JSON.stringify(parsedData, null, 2)); // Pretty print the received JSON
+        if (parsedData.date !== date) console.error(`-> Mismatch: Requested date ${date}, AI returned date ${parsedData.date}`);
+        // (Your existing detailed logging for other fields can remain here)
+        console.error("Received data from OpenAI:", JSON.stringify(parsedData, null, 2));
         return null;
     }
 
-    // 5. Update Result Construction - Include new fields
-    // If validation passes, we can be more confident in casting to the full ChallengeData type
-    const challengeData: ChallengeData = {
-        id: date,
-        date: parsedData.date,
+    const challengeDataFromOpenAI: ChallengeData = {
+        id: date, // Ensure the ID is the requested date, not what AI might put if it errs
+        date: parsedData.date, // This should be same as 'date' due to validation
         difficulty: parsedData.difficulty,
         question: parsedData.question,
         questionTitle: parsedData.questionTitle,
@@ -139,23 +158,61 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
             input: parsedData.inputOutput.input,
             output: parsedData.inputOutput.output,
         },
-        solutionHeader: parsedData.solutionHeader as string, // Cast validated field
+        solutionHeader: parsedData.solutionHeader as string,
         solution: parsedData.solution,
         explanation: parsedData.explanation,
-        testCases: parsedData.testCases as Array<{ input: string; output: string }>, // Cast validated field
+        testCases: parsedData.testCases as Array<{ input: string; output: string }>,
     };
 
-    console.log(`Successfully generated and parsed challenge for ${date} with header and test cases.`);
-    return challengeData;
+    console.log(`Successfully generated and parsed challenge for ${date} from OpenAI.`);
+
+    // Store in Vercel KV. Items in KV don't expire by default unless specified.
+    try {
+      await kv.set(cacheKey, challengeDataFromOpenAI);
+      console.log(`Stored challenge data for ${date} in Vercel KV (key: ${cacheKey}).`);
+
+      // Add this date to a set of all available challenge dates for easier calendar lookup
+      await kv.sadd(availableDatesSetKey, date);
+      console.log(`Added ${date} to set '${availableDatesSetKey}' of available challenge dates.`);
+
+    } catch (kvError) {
+      console.error(`Error storing data or metadata in Vercel KV for date ${date}:`, kvError);
+      // Don't fail the entire request if caching fails, but log it. The data will still be returned to the user this time.
+    }
+
+    return challengeDataFromOpenAI;
 
   } catch (error) {
     if (error instanceof OpenAI.APIError) {
         console.error(`OpenAI API Error for date ${date}: ${error.status} ${error.name}`, error.message);
-         // Log response body if available in error 
-         
     } else {
-        console.error(`Error fetching challenge data from OpenAI for date ${date}:`, error);
+        console.error(`Error during OpenAI fetch or processing for date ${date}:`, error);
     }
     return null;
+  }
+}
+
+// New function to get all dates that have challenges stored
+export async function getAvailableChallengeDates(): Promise<string[]> {
+  const availableDatesSetKey = 'meta:available_challenge_dates';
+  try {
+    console.log(`Fetching available challenge dates from Vercel KV set '${availableDatesSetKey}'...`);
+    const dates = await kv.smembers(availableDatesSetKey);
+    
+    if (!dates || dates.length === 0) {
+        console.log(`No dates found in set '${availableDatesSetKey}' or set is empty.`);
+        return [];
+    }
+    
+    // Filter out any potential null/undefined/invalid values and sort
+    const validDates = dates
+        .filter((date): date is string => typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date))
+        .sort((a, b) => b.localeCompare(a)); // Sort descending (newest first)
+
+    console.log(`Found ${validDates.length} available challenge dates from set.`);
+    return validDates;
+  } catch (error) {
+    console.error(`Error fetching available challenge dates from Vercel KV set '${availableDatesSetKey}':`, error);
+    return [];
   }
 }

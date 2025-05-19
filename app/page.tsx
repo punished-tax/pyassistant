@@ -1,18 +1,16 @@
-//page.tsx
-import React, { Suspense} from 'react'; // Added useCallback
-//import Editor from './editor'
-
+// app/page.tsx
+import React, { Suspense } from 'react';
 import {
   Dialog,
   DialogContent,
   DialogTrigger,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog'
-import { BadgeHelp, Dices } from 'lucide-react'
+} from '@/components/ui/dialog';
+import { BadgeHelp, Dices } from 'lucide-react';
 import { getChallengeDataForDate, ChallengeData } from '@/lib/challenges';
 import Link from 'next/link';
-import ChallengeInterfaceClient from '@/components/challenge-interface'; // We will create this
+import ChallengeInterfaceClient from '@/components/challenge-interface';
 
 export const metadata = {
   title: "pyassistant",
@@ -20,30 +18,27 @@ export const metadata = {
   icons: { icon: '/android-chrome-192x192.png' }
 };
 
-export const revalidate = 86400; // 24 hours
+// Revalidate this page every 24 hours.
+// When revalidated, getChallengeDataForDate(today) will be called.
+// If it's a new "today", and data isn't in cache, OpenAI will be hit, and then cached.
+export const revalidate = 86400; // 24 hours in seconds
 
-// Helper to generate default editor code from header or fallback
+// Helper to generate default editor code (same as before)
 function generateInitialCode(challengeData: ChallengeData | null): string {
-  // Use solutionHeader if available, otherwise provide a standard Python function stub
   if (challengeData?.solutionHeader) {
-      // Add 'pass' and standard indentation/newlines for a clean editor start
       const header = challengeData.solutionHeader.trim();
-      // Basic check if it already ends with a colon, common in function defs
       const needsColon = !header.endsWith(':');
       return `${header}${needsColon ? ':' : ''}\n  pass\n\n`;
   }
-  // Fallback default code
   return `def solve():\n  # Your solution here\n  pass\n\n`;
 }
 
+// Helper to get today's date string (can be moved to a utils file if used widely)
 function getTodayDateString(): string {
   return new Date().toISOString().split('T')[0];
 }
 
-
-
-
-// Header 
+// Header Component (same as before)
 const Header: React.FC<{ title: string }> = ({ title }) => {
   return (
     <header className="relative bg-black border-b border-gray-400 py-2">
@@ -51,18 +46,14 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
         <h1 className="text-white text-3xl font-mono font-bold ">
           {title}
         </h1>
-
         <div className='absolute left-4 top-1/2 transform -translate-y-1/2'>
           <span>
-            
             <Link href='/calendar' className='inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors'>
-            <Dices> size={25}</Dices>
+            <Dices size={25} />
             Archive
             </Link>
           </span>
-          
         </div>
-        
         <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
           <Dialog>
             <DialogTrigger className="inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors">
@@ -71,9 +62,7 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
             </DialogTrigger>
             <DialogContent className="border rounded-xl border-[rgb(34,34,34)] bg-[rgb(34,34,34)] p-6 ">
               <DialogHeader>
-                
                 <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>About PyAssistant</DialogTitle>
-                
               </DialogHeader>
               <p>PyAssistant is a daily coding game in the spirit of Leetcode and Wordle. The questions are fetched from ChatGPT and the chatbot can help you get a headstart in solving problems, or even analyze the code you've written so far. </p>
             </DialogContent>
@@ -81,79 +70,47 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
         </div>
       </div>
     </header>
-  )
-}
-
-// Simple Loading Component
-function LoadingTodaysChallenge() {
-  const today = getTodayDateString();
-  return (
-    <>
-      
-      <div className=" max-w-2xl ml-44">
-      {/* LOADING*/}
-      <section className="p-4 border-none bg-[rgb(34,34,34)] dark:bg-gray-800">
-        <h2 className='text-2xl md:text-3xl font-bold mb-4 text-gray-200'>Loading Challenge...</h2>
-        <h2 className="text-2xl font-bold mb-3 text-gray-200 dark:text-gray-400"></h2>
-        <div className="prose dark:prose-invert max-w-none text-gray-200 dark:text-gray-300">
-          <p></p>
-        </div>
-      </section>
-
-      {/* LOADING */}
-      <section className="p-4 border-none bg-[rgb(34,34,34)] dark:bg-gray-800">
-        <h2 className="text-xl font-semibold mb-3 text-gray-100 dark:text-gray-200"></h2>
-        <div className="space-y-2">
-          <div>
-            <h3 className="font-medium mb-1 text-gray-100 dark:text-gray-300"></h3>
-            <pre className="bg-[rgb(34,34,34)] p-2 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
-              <code></code>
-            </pre>
-          </div>
-          <div>
-            <h3 className="font-medium mb-1 text-gray-100 dark:text-gray-300"></h3>
-             <pre className="bg-[rgb(34,34,34)] p-2 rounded overflow-x-auto text-sm text-gray-100 dark:text-gray-200">
-               <code></code>
-            </pre>
-          </div>
-        </div>
-      </section>
-
-      
-      {/* Solution Section (Consider hiding initially with a button) */}
-      
-    </div>
-      
-      </>
   );
-}
+};
 
+// Loading component remains the same
 
-
-export const runtime = 'edge'
+export const runtime = 'edge'; // Ensure this is compatible with all operations
 
 export default async function Home() {
   const today = getTodayDateString();
-  const fetchedChallengeData = await getChallengeDataForDate(today); // Data fetching on server
+  const fetchedChallengeData = await getChallengeDataForDate(today); // This now uses the cache
 
-  const rawInputs: string[] = fetchedChallengeData?.testCases?.map(tc => tc.input) ?? [];
-  const referenceSolutionCode: string = fetchedChallengeData?.solution ?? "";
+  // Handle case where today's challenge might not be available (e.g., first run, OpenAI error)
+  if (!fetchedChallengeData) {
+    return (
+      <>
+        <Header title="pyassistant" />
+        <div className="text-center p-10 text-white">
+          <h2 className="text-2xl font-bold mb-4">Challenge Not Available</h2>
+          <p>Today's challenge could not be loaded. Please try again later.</p>
+          <p className="mt-4">If this is the first time running the app today, the challenge might still be generating.</p>
+        </div>
+      </>
+    );
+  }
+
+  const rawInputs: string[] = fetchedChallengeData.testCases?.map(tc => tc.input) ?? [];
+  const referenceSolutionCode: string = fetchedChallengeData.solution ?? "";
   const editorSetupCode = generateInitialCode(fetchedChallengeData);
 
   return (
     <>
       <Header title="pyassistant" />
-      <Suspense fallback={<div className="text-center p-10 text-white">Loading Challenge...</div>}>
-        {/* Pass server-fetched data to the Client Component */}
+      <Suspense fallback={<div className="text-center p-10 text-white">Loading Today's Challenge...</div>}>
         <ChallengeInterfaceClient
           initialChallengeData={fetchedChallengeData}
-          initialEditorSetupCode={editorSetupCode} // Renamed for clarity from "initialEditorCode"
-          rawInputsForEnvironment={rawInputs} // Renamed for clarity
-          referenceSolutionCodeForEnvironment={referenceSolutionCode} // Renamed for clarity
+          initialEditorSetupCode={editorSetupCode}
+          rawInputsForEnvironment={rawInputs}
+          referenceSolutionCodeForEnvironment={referenceSolutionCode}
         />
       </Suspense>
     </>
   );
-  
 }
 
