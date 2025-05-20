@@ -1,7 +1,7 @@
 // app/calendar/page.tsx
 import Link from 'next/link';
 import CalendarView from '@/components/CalendarView';
-import { getAvailableChallengeDates } from '@/lib/challenges'; // Import the new function
+import { getAvailableChallengesInfo, AvailableChallengeInfo } from '@/lib/challenges';
 import {
     Dialog,
     DialogContent,
@@ -60,8 +60,8 @@ export default async function CalendarPage() {
   const currentYear = today.getFullYear();
   const currentMonth = today.getMonth() + 1; // 1-12
 
-  // Fetch data on the server
-  const availableDates = await getAvailableChallengeDates();
+    // Fetch data on the server using the new function
+  const availableChallenges: AvailableChallengeInfo[] = await getAvailableChallengesInfo();
   const todayDateStr = getTodayDateString();
 
   return (
@@ -79,7 +79,7 @@ export default async function CalendarPage() {
            <CalendarView
              year={currentYear}
              month={currentMonth}
-             availableDates={availableDates} // Pass available dates
+             availableChallenges={availableChallenges}  // Pass available dates
              todayDate={todayDateStr}         // Pass today's date string
            />
         </div>

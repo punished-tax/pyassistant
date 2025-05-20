@@ -22,6 +22,11 @@ export interface ChallengeData {
   }>;
 }
 
+export interface AvailableChallengeInfo {
+  date: string;
+  questionTitle: string;
+}
+
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
@@ -153,7 +158,7 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
         date: parsedData.date, // This should be same as 'date' due to validation
         difficulty: parsedData.difficulty,
         question: parsedData.question,
-        questionTitle: parsedData.questionTitle,
+        questionTitle: parsedData.questionTitle as string,
         inputOutput: {
             input: parsedData.inputOutput.input,
             output: parsedData.inputOutput.output,
@@ -192,27 +197,62 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
   }
 }
 
-// New function to get all dates that have challenges stored
-export async function getAvailableChallengeDates(): Promise<string[]> {
+// Updated function to get available dates WITH their titles
+export async function getAvailableChallengesInfo(): Promise<AvailableChallengeInfo[]> {
   const availableDatesSetKey = 'meta:available_challenge_dates';
+  const challengesInfo: AvailableChallengeInfo[] = [];
+
   try {
-    console.log(`Fetching available challenge dates from Vercel KV set '${availableDatesSetKey}'...`);
+    console.log(`Fetching all available challenge dates from set '${availableDatesSetKey}'...`);
     const dates = await kv.smembers(availableDatesSetKey);
-    
+
     if (!dates || dates.length === 0) {
-        console.log(`No dates found in set '${availableDatesSetKey}' or set is empty.`);
-        return [];
+      console.log(`No dates found in set '${availableDatesSetKey}'.`);
+      return [];
     }
     
-    // Filter out any potential null/undefined/invalid values and sort
-    const validDates = dates
-        .filter((date): date is string => typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date))
-        .sort((a, b) => b.localeCompare(a)); // Sort descending (newest first)
+    // Filter for valid date strings before processing
+    const validDates = dates.filter((date): date is string =>
+        typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)
+    );
 
-    console.log(`Found ${validDates.length} available challenge dates from set.`);
-    return validDates;
+    console.log(`Found ${validDates.length} valid dates. Fetching titles...`);
+
+    // Fetch title for each valid date
+    // Using Promise.all for concurrent fetching from KV
+    const challengeDataPromises = validDates.map(async (date) => {
+      const cacheKey = `challenge:${date}`;
+      try {
+        // We only need the questionTitle, but KV stores the whole object.
+        // If performance becomes an issue with many items, consider storing titles separately.
+        const challenge = await kv.get<ChallengeData>(cacheKey);
+        if (challenge && challenge.questionTitle) {
+          return { date: challenge.date, questionTitle: challenge.questionTitle };
+        }
+        console.warn(`Could not retrieve title for date ${date} or title was missing.`);
+        return null; // Or some default if a challenge object exists but title is missing
+      } catch (error) {
+        console.error(`Error fetching challenge data for title on date ${date} from KV:`, error);
+        return null;
+      }
+    });
+
+    const results = await Promise.all(challengeDataPromises);
+
+    results.forEach(result => {
+      if (result) {
+        challengesInfo.push(result);
+      }
+    });
+
+    // Sort by date, descending (newest first)
+    challengesInfo.sort((a, b) => b.date.localeCompare(a.date));
+
+    console.log(`Successfully fetched info for ${challengesInfo.length} challenges.`);
+    return challengesInfo;
+
   } catch (error) {
-    console.error(`Error fetching available challenge dates from Vercel KV set '${availableDatesSetKey}':`, error);
-    return [];
+    console.error(`Error fetching available challenge dates/info from Vercel KV:`, error);
+    return []; // Return empty array on error
   }
 }
