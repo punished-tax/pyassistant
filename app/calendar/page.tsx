@@ -1,137 +1,95 @@
-// app/challenge/[date]/page.tsx
-import React, { Suspense } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import { BadgeHelp, Dices } from 'lucide-react';
-import { getChallengeDataForDate, ChallengeData } from '@/lib/challenges';
+// app/calendar/page.tsx
 import Link from 'next/link';
-import ChallengeInterfaceClient from '@/components/challenge-interface';
-import { notFound } from 'next/navigation'; // For handling missing challenges
+import CalendarView from '@/components/CalendarView';
+import { getAvailableChallengeDates } from '@/lib/challenges'; // Import the new function
+import {
+    Dialog,
+    DialogContent,
+    DialogTrigger,
+    DialogHeader,
+    DialogTitle,
+  } from '@/components/ui/dialog';
+import { BadgeHelp, Dices } from 'lucide-react';
 
-// For archived data, revalidation might not be strictly necessary if data in KV is considered permanent.
-// If you want to allow the possibility of updating an archived entry by re-fetching from OpenAI
-// (e.g., if the OpenAI prompt changes or there was an error), you can keep revalidate.
-// Otherwise, remove it or set a very long duration.
-// For now, let's remove it to primarily serve from cache. Vercel KV items don't expire by default.
-// export const revalidate = 86400; // 24 hours, or remove for indefinite cache
-
-// Optional: Pre-render some recent archive pages at build time
-// import { getAvailableChallengeDates } from '@/lib/challenges';
-// export async function generateStaticParams() {
-//   const availableDates = await getAvailableChallengeDates();
-//   // Example: pre-render the 10 most recent challenges
-//   const recentDatesToPrerender = availableDates.slice(0, 10);
-//   return recentDatesToPrerender.map((date) => ({
-//     date: date,
-//   }));
-// }
-
-
-// Helper to generate default editor code (same as in main page.tsx)
-function generateInitialCode(challengeData: ChallengeData | null): string {
-  if (challengeData?.solutionHeader) {
-      const header = challengeData.solutionHeader.trim();
-      const needsColon = !header.endsWith(':');
-      return `${header}${needsColon ? ':' : ''}\n  pass\n\n`;
-  }
-  return `def solve():\n  # Your solution here\n  pass\n\n`;
-}
-
-// Re-usable Header Component (can be shared)
-const Header: React.FC<{ title: string; date?: string }> = ({ title, date }) => {
-    return (
-      <header className="relative bg-black border-b border-gray-400 py-2">
-        <div className="container mx-auto px-4 flex justify-center items-center relative"> {/* Added relative for positioning context */}
-          <h1 className="text-white text-2xl sm:text-3xl font-mono font-bold text-center"> {/* Added text-center */}
-            {title} {date && <span className="block sm:inline text-xl text-gray-400 font-normal">({date})</span>}
-          </h1>
-          <div className='absolute left-4 top-1/2 transform -translate-y-1/2'>
-            <span>
-              <Link href='/calendar' className='inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors'>
-              <Dices size={25}/>
-              Archive
-              </Link>
-            </span>
-          </div>
-          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-            <Dialog>
-              <DialogTrigger className="inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors">
-                <span>About</span>
-                <BadgeHelp size={25} />
-              </DialogTrigger>
-              <DialogContent className="border rounded-xl border-[rgb(34,34,34)] bg-[rgb(34,34,34)] p-6 ">
-                <DialogHeader>
-                  <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>About PyAssistant</DialogTitle>
-                </DialogHeader>
-                <p>PyAssistant is a daily coding game in the spirit of Leetcode and Wordle. The questions are fetched from ChatGPT and the chatbot can help you get a headstart in solving problems, or even analyze the code you've written so far. </p>
-              </DialogContent>
-            </Dialog>
-          </div>
-        </div>
-      </header>
-    );
+export const metadata = {
+  title: "pyassistant - Archive"
 };
 
-// Type for page parameters
-interface ChallengePageProps {
-  params: {
-    date: string; // This will be 'YYYY-MM-DD'
-  };
+// Re-usable Header component (same as you provided)
+const Header: React.FC<{ title: string }> = ({ title }) => {
+  return (
+    <header className="relative bg-black border-b border-gray-400 py-2">
+      <div className="container mx-auto px-4 flex justify-center items-center">
+        <h1 className="text-white text-3xl font-mono font-bold ">
+          {title}
+        </h1>
+        <div className='absolute left-4 top-1/2 transform -translate-y-1/2'>
+          <span>
+            <Link href='/calendar' className='inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors'>
+            <Dices size={25} />
+            Archive
+            </Link>
+          </span>
+        </div>
+        <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+          <Dialog>
+            <DialogTrigger className="inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors">
+              <span>About</span>
+              <BadgeHelp size={25} />
+            </DialogTrigger>
+            <DialogContent className="border rounded-xl border-[rgb(34,34,34)] bg-[rgb(34,34,34)] p-6 ">
+              <DialogHeader>
+                <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>About PyAssistant</DialogTitle>
+              </DialogHeader>
+              <p>PyAssistant is a daily coding game in the spirit of Leetcode and Wordle. It has curated questions from ChatGPT, as well as a chatbot to help you get a headstart in solving problems. </p>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+    </header>
+  )
+};
+
+// Helper to get today's date string in YYYY-MM-DD format
+function getTodayDateString(): string {
+  return new Date().toISOString().split('T')[0];
 }
 
-// Dynamic metadata for the page title
-export async function generateMetadata({ params }: ChallengePageProps) {
-  return {
-    title: `PyAssistant Challenge - ${params.date}`,
-    description: `Python Coding Challenge for ${params.date}`,
-    icons: { icon: '/android-chrome-192x192.png' }
-  };
-}
+export default async function CalendarPage() {
+  const today = new Date(); // Keep for current year/month display
+  const currentYear = today.getFullYear();
+  const currentMonth = today.getMonth() + 1; // 1-12
 
-export const runtime = 'edge'; // Vercel KV and OpenAI SDK v4 are Edge compatible
-
-export default async function ChallengePage({ params }: ChallengePageProps) {
-  const { date } = params;
-
-  // Validate date format from URL parameter
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-    console.error("Invalid date format in URL parameter:", date);
-    notFound(); // Render 404 page
-  }
-
-  const fetchedChallengeData = await getChallengeDataForDate(date);
-
-  if (!fetchedChallengeData) {
-    // If no data is found for this date (e.g., not in cache, and OpenAI fetch failed or wasn't attempted for old dates)
-    console.log(`Challenge data not found for date: ${date}. Rendering 404.`);
-    notFound(); // This will render the nearest not-found.js file or a default Next.js 404 page
-  }
-
-  const rawInputs: string[] = fetchedChallengeData.testCases?.map(tc => tc.input) ?? [];
-  const referenceSolutionCode: string = fetchedChallengeData.solution ?? "";
-  const editorSetupCode = generateInitialCode(fetchedChallengeData);
+  // Fetch data on the server
+  const availableDates = await getAvailableChallengeDates();
+  const todayDateStr = getTodayDateString();
 
   return (
     <>
-      <Header title="pyassistant" date={date} /> {/* Pass the date to the header */}
-      <Suspense fallback={
-        <div className="text-center p-10 text-white">
-          Loading Challenge for {date}...
+      <Header title="pyassistant"/>
+      <div className="container mx-auto p-4 md:p-8">
+        <h1 className="text-3xl font-mono mb-6 text-left text-gray-100 dark:text-white">
+          Archive
+        </h1>
+        <p className="text-center text-gray-400 dark:text-gray-300 mb-8">
+          Select a date to view the challenge for that day. Days with available challenges are linked.
+        </p>
+
+        <div className="max-w-3xl mx-auto"> {/* Adjusted width for better calendar display */}
+           <CalendarView
+             year={currentYear}
+             month={currentMonth}
+             availableDates={availableDates} // Pass available dates
+             todayDate={todayDateStr}         // Pass today's date string
+           />
         </div>
-      }>
-        <ChallengeInterfaceClient
-          initialChallengeData={fetchedChallengeData}
-          initialEditorSetupCode={editorSetupCode}
-          rawInputsForEnvironment={rawInputs}
-          referenceSolutionCodeForEnvironment={referenceSolutionCode}
-          key={date} // Add key to ensure client component remounts/resets if navigating between different [date] pages
-        />
-      </Suspense>
+
+        <div className="mt-8 text-center">
+          <Link href="/" className="text-blue-500 dark:text-blue-400 hover:underline">
+            ← Back to Today's Challenge
+          </Link>
+        </div>
+      </div>
     </>
   );
 }
