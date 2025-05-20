@@ -64,7 +64,7 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
               <DialogHeader>
                 <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>About PyAssistant</DialogTitle>
               </DialogHeader>
-              <p>PyAssistant is a daily coding game in the spirit of Leetcode and Wordle. The questions are fetched from ChatGPT and the chatbot can help you get a headstart in solving problems, or even analyze the code you've written so far. </p>
+              <p>PyAssistant is a daily coding game in the spirit of Leetcode and Wordle. The questions are fetched from ChatGPT, and the chatbot can help analyze your code if you are in any trouble. </p>
             </DialogContent>
           </Dialog>
         </div>
