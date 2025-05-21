@@ -42,39 +42,38 @@ function generateInitialCode(challengeData: ChallengeData | null): string {
   return `def solve():\n  # Your solution here\n  pass\n\n`;
 }
 
-// Re-usable Header Component (can be shared)
-const Header: React.FC<{ title: string; date?: string }> = ({ title, date }) => {
-    return (
-      <header className="relative bg-black border-b border-gray-400 py-2">
-        <div className="container mx-auto px-4 flex justify-center items-center relative"> {/* Added relative for positioning context */}
-          <h1 className="text-white text-2xl sm:text-3xl font-mono font-bold text-center"> {/* Added text-center */}
-            {title} {date && <span className="block sm:inline text-xl text-gray-400 font-normal">({date})</span>}
-          </h1>
-          <div className='absolute left-4 top-1/2 transform -translate-y-1/2'>
-            <span>
-              <Link href='/calendar' className='inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors'>
-              <Dices size={25}/>
-              Archive
-              </Link>
-            </span>
-          </div>
-          <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-            <Dialog>
-              <DialogTrigger className="inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors">
-                <span>About</span>
-                <BadgeHelp size={25} />
-              </DialogTrigger>
-              <DialogContent className="border rounded-xl border-[rgb(34,34,34)] bg-[rgb(34,34,34)] p-6 ">
-                <DialogHeader>
-                  <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>About PyAssistant</DialogTitle>
-                </DialogHeader>
-                <p>PyAssistant is a daily coding game in the spirit of Leetcode and Wordle. The questions are fetched from ChatGPT and the chatbot can help you get a headstart in solving problems, or even analyze the code you've written so far. </p>
-              </DialogContent>
-            </Dialog>
-          </div>
+const Header: React.FC<{ title: string }> = ({ title }) => {
+  return (
+    <header className="relative bg-black border-b border-gray-400 py-2">
+      <div className="container mx-auto px-4 flex justify-center items-center">
+        <h1 className="text-white text-3xl font-mono font-bold ">
+          {title}
+        </h1>
+        <div className='absolute left-4 top-1/2 transform -translate-y-1/2'>
+          <span>
+            <Link href='/calendar' className='inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors'>
+            <Dices size={25} />
+            Archive
+            </Link>
+          </span>
         </div>
-      </header>
-    );
+        <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
+          <Dialog>
+            <DialogTrigger className="inline-flex items-center gap-2 px-3 py-2 text-white hover:bg-[rgb(75,75,75)] focus:outline-none transition-colors">
+              <span>About</span>
+              <BadgeHelp size={25} />
+            </DialogTrigger>
+            <DialogContent className="border rounded-xl border-[rgb(34,34,34)] bg-[rgb(34,34,34)] p-6 ">
+              <DialogHeader>
+                <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>About PyAssistant</DialogTitle>
+              </DialogHeader>
+              <p>PyAssistant is a daily coding game in the spirit of Leetcode and Wordle. The questions are fetched from ChatGPT, and the chatbot can help analyze your code if you are in any trouble. </p>
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+    </header>
+  );
 };
 
 // Type for page parameters
@@ -118,7 +117,7 @@ export default async function ChallengePage({ params }: ChallengePageProps) {
 
   return (
     <>
-      <Header title="pyassistant" date={date} /> {/* Pass the date to the header */}
+      <Header title="pyassistant"/> {/* Pass the date to the header --> NO, just add go back to today's q */}
       <Suspense fallback={
         <div className="text-center p-10 text-white">
           Loading Challenge for {date}...

@@ -101,9 +101,7 @@ export default function ChallengeInterfaceClient({
   };
       // Helper to render test result details (moved from CodingEnvironment)
   const RenderUserTestResult = () => {
-    if (currentTestCaseGenStatus === 'generating') {
-       return <p className="text-yellow-400 flex items-center"><Cog className="mr-2 h-4 w-4 animate-spin" /></p>;
-    }
+    
     if (currentTestCaseGenStatus === 'error') {
         return <p className="text-red-400 flex items-center"><AlertTriangle className="mr-2 h-4 w-4" /> Error Preparing Tests: {currentTestCaseGenError || 'Unknown error'}</p>;
     }
@@ -114,17 +112,17 @@ export default function ChallengeInterfaceClient({
          if (currentTestCaseGenStatus === 'idle' && !userTestResult && !isExecutingCode) {
             // This state is handled below
          } else {
-            return <p className="text-gray-400">Waiting for test case preparation...</p>;
+            return <p className=""></p>;
          }
     }
 
     if (isExecutingCode) {
-        return <p className="text-gray-400 flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Your Code...</p>;
+        return <p className="text-gray-400 flex items-center"></p>;
     }
     if (!userTestResult) {
         // This could also show if pyodide is still loading initially, or if test gen failed before any execution attempt.
         // Let's rely on the testCaseGenStatus checks above for more specific messages first.
-        return <p className="text-gray-400">Click "Submit" in the editor area to run test cases.</p>;
+        return <p className=""></p>;
     }
 
     switch (userTestResult.status) {
@@ -138,7 +136,7 @@ export default function ChallengeInterfaceClient({
         case 'failed':
              return (
                  <div className="text-red-400 space-y-1 text-xs">
-                    <p className="flex items-center font-semibold"> Test Case {userTestResult.testCaseNumber} Failed</p>
+                    <p className="flex items-center font-semibold"> Test Case Failed</p>
                     <div><span className="font-medium text-gray-300">Input:</span><pre className="inline  p-1 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.input}</pre></div>
                     <div><span className="font-medium text-gray-300">Expected:</span><pre className="inline p-1 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.expectedOutput}</pre></div>
                     <div><span className="font-medium text-gray-300">Output:</span><pre className="inline  p-1 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.actualOutput}</pre></div>
@@ -154,7 +152,7 @@ export default function ChallengeInterfaceClient({
                  </div>
              );
         default:
-              return <p className="text-gray-400">Submit your code to see the results.</p>;
+              return <p className="text-gray-400"></p>;
     }
   };
 

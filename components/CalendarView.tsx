@@ -26,8 +26,14 @@ const generateDaysForMonth = (year: number, month: number): ( { dayOfMonth: numb
 
 // Helper function to format date as DD-MM
 const formatDateDDMM = (dateString: string): string => {
-  const [month, day] = dateString.split('-');
-  return `${day}-${month}`;
+  // dateString is in YYYY-MM-DD format
+  const parts = dateString.split('-'); // Example: "2023-10-27" -> ["2023", "10", "27"]
+  if (parts.length === 3) {
+    const day = parts[2];
+    const month = parts[1];
+    return `${day}-${month}`;
+  }
+  return dateString; // Fallback in case of unexpected format
 };
 
 export default function CalendarView({ year, month, availableChallenges, todayDate }: CalendarViewProps) {
