@@ -86,9 +86,9 @@ interface ChallengePageProps {
 // Dynamic metadata for the page title
 export async function generateMetadata({ params }: ChallengePageProps) {
   return {
-    title: `PyAssistant Challenge - ${params.date}`,
+    title: `pyassistant`,
     description: `Python Coding Challenge for ${params.date}`,
-    icons: { icon: '/android-chrome-192x192.png' }
+    icons: { icon: '/rubix.jpg' }
   };
 }
 

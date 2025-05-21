@@ -12,7 +12,7 @@ import {
 import { BadgeHelp, Dices, ChevronLeft, ChevronRight } from 'lucide-react'; 
 
 export const metadata = {
-  title: "pyassistant - Archive"
+  title: "pyassistant"
 };
 
 const Header: React.FC<{ title: string }> = ({ title }) => {
