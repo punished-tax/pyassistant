@@ -78,6 +78,7 @@ export default function CodingEnvironment({
 
    // Effect to reset states when the challenge changes
   useEffect(() => {
+    console.log("CodingEnvironment: `initialCodeForEditor` prop changed. Resetting test gen state.");
     // Reset internal execution state, parent will clear its result display
     setIsInternallyExecuting(false);
     setGeneratedTestCases(null);
@@ -92,10 +93,10 @@ export default function CodingEnvironment({
     });
   }, [initialCodeForEditor, onExecutionReport]); // initialCodeForEditor signals new challenge
 
-  // Effect to potentially update editor if initialCode prop changes
+   //Effect to potentially update editor if initialCode prop changes
   useEffect(() => {
       setCode(liveEditorCode);
-      // Optionally, you could trigger a reset of test results here too if desired
+  // Optionally, you could trigger a reset of test results here too if desired
        setUserTestResult(null); //hmmmmm
   }, [liveEditorCode]);
 
@@ -247,60 +248,8 @@ export default function CodingEnvironment({
  
    // Helper to render test result details for USER'S code
    const RenderUserTestResult = () => {
-      // Display generation status *before* user results if not ready
-      if (testCaseGenerationStatus === 'generating') {
-         return <p className="text-yellow-400 flex items-center"><Cog className="mr-2 h-4 w-4 animate-spin" /> Preparing Test Cases...</p>;
-      }
-       if (testCaseGenerationStatus === 'error') {
-          return <p className="text-red-400 flex items-center"><AlertTriangle className="mr-2 h-4 w-4" /> Error Preparing Tests: {testCaseGenerationError || 'Unknown error'}</p>;
-      }
-      if (testCaseGenerationStatus !== 'ready') {
-           return <p className="text-gray-400">Waiting for test case preparation...</p>;
-      }
- 
-      // If tests are ready, show execution/result status
-     if (isExecutingUserCode) {
-         return <p className="text-gray-400 flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Your Code...</p>;
-     }
-     if (!userTestResult) {
-         return <p className="text-gray-400">Click "Submit" to run test cases against your solution.</p>;
-     }
- 
-     // ... (switch statement for userTestResult.status: success, failed, error remains the same as before)
-     switch (userTestResult.status) {
-         case 'success':
-             return (
-                 <div className="text-green-400 space-y-1">
-                     <p className="flex items-center font-semibold"><CheckCircle className="mr-2 h-5 w-5" /> Success!</p>
-                     <p>Your code passed all {userTestResult.passedCount} test cases.</p>
-                     {/* Optional: Display stdout from user run */}
-                     {/* {userTestResult.stdout && <pre className="text-xs text-gray-500 mt-2 whitespace-pre-wrap break-words">Combined Output:\n{userTestResult.stdout}</pre>} */}
-                 </div>
-             );
-         case 'failed':
-              return (
-                  <div className="text-red-400 space-y-1">
-                     <p className="flex items-center font-semibold"><XCircle className="mr-2 h-5 w-5" /> Test Case {userTestResult.testCaseNumber} Failed</p>
-                     <div><span className="font-medium text-gray-300 text-xs">Input:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.input}</pre></div>
-                     <div><span className="font-medium text-gray-300 text-xs">Expected:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.expectedOutput}</pre></div>
-                     <div><span className="font-medium text-gray-300 text-xs">Output:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.actualOutput}</pre></div>
-                     {userTestResult.error && (<div><span className="font-medium text-gray-300 text-xs">Runtime Error:</span><pre className="inline bg-[rgb(55,55,55)] p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.error}</pre></div>)}
-                     {userTestResult.stdout && (<div><span className="font-medium text-gray-300 text-xs">Your Captured Output (stdout/stderr):</span><pre className="inline bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.stdout}</pre></div>)}
-                  </div>
-              );
-         case 'error':
-              return (
-                  <div className="text-orange-400 space-y-1">
-                      <p className="flex items-center font-semibold"><AlertTriangle className="mr-2 h-5 w-5" /> Execution Error</p>
-                     <p>Could not run tests on your code due to an error:</p>
-                     <pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.message}</pre>
-                     {userTestResult.stdout && (<div><p className="font-medium text-gray-300">Your Captured Output (stdout/stderr):</p><pre className="bg-gray-700 p-2 rounded text-xs whitespace-pre-wrap break-words">{userTestResult.stdout}</pre></div>)}
-                  </div>
-              );
-         default:
-               return <p className="text-gray-400">Submit your code to see the results.</p>; // Fallback
-     }
-   };
+  
+};
  
    // Determine button disabled state and text
    const getButtonState = (): { disabled: boolean; content: React.ReactNode } => {
@@ -315,7 +264,7 @@ export default function CodingEnvironment({
  
    const buttonState = getButtonState();
  
-     return (
+    return (
     <div className="flex flex-col w-full" style={{ height: TOTAL_ENVIRONMENT_HEIGHT }}>
       {/* Editor + footer */}
       <div className="relative w-full" style={{ height: EDITOR_HEIGHT }}>

@@ -47,7 +47,9 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
     <header className="relative bg-black border-b border-gray-400 py-2">
       <div className="container mx-auto px-4 flex justify-center items-center">
         <h1 className="text-white text-3xl font-mono font-bold ">
+          <Link href="/">
           {title}
+          </Link>
         </h1>
         <div className='absolute left-4 top-1/2 transform -translate-y-1/2'>
           <span>

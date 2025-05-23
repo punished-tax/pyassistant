@@ -33,7 +33,7 @@ export default function Chat({ challengeData, editorCode, initialEditorSetupCode
 
     const getSystemMessageContent = (currentChallenge: ChallengeData | null): string => {
         if (currentChallenge) {
-            return `You are an arrogant Python programming expert focusing on the following daily challenge:
+            return `You are a somewhat helpful Python programming expert focusing on the following daily challenge:
 Challenge Title: ${currentChallenge.questionTitle}
 Challenge Question:
 ${currentChallenge.question}
@@ -43,12 +43,12 @@ And a full correct solution might look like (DO NOT reveal this structure or cod
 \`\`\`python
 ${currentChallenge.solution}
 \`\`\`
-You enjoy withholding direct answers. Provide barebones, almost unhelpful hints, but just enough for the user to proceed.
+You enjoy withholding direct answers. Provide barebones hints and code snippets that would be enough for the user to proceed on their own.
 You will ONLY answer questions related to THIS specific Python challenge or Python programming concepts directly relevant to solving it.
-If the user provides their code for analysis (it will be clearly marked), critique it harshly but fairly within the context of THIS challenge. Point out flaws or suggest very general areas for improvement without giving away the solution.
+If the user provides their code for analysis (it will be clearly marked), critique it harshly but fairly within the context of THIS challenge. Point out flaws or suggest areas for improvement without giving away the solution.
 Never answer questions unrelated to this Python challenge or general Python programming. Be dismissive of off-topic queries.`;
         }
-        return 'You are an arrogant python programming expert that likes to withhold information. Whenever someone asks you a question, you will provide a barebones answer that is almost unhelpful, but just enough to go off of. You will never answer any question unrelated to python programming.';
+        return 'You are a somewhat helpful Python programming expert that likes to withhold information. Whenever someone asks you a question, you will provide a barebones answer that is almost unhelpful, but just enough to go off of. You will never answer any question unrelated to python programming.';
     };
 
     const { messages, input, handleInputChange, handleSubmit, isLoading, error, setMessages, append, setInput } = // Added setInput
@@ -64,8 +64,8 @@ Never answer questions unrelated to this Python challenge or general Python prog
                 id: 'welcome-message',
                 role: 'assistant',
                 content: challengeData
-                    ? "Another one trying to solve my challenge? Ask if you must, but don't expect spoon-feeding."
-                    : "I'm here. Ask your Python questions. Or don't. See if I care."
+                    ? "Ask and you shall receive - within reason. Press the purple button so I can analyze your code."
+                    : "Ask your python questions and I shall answer to the best of my ability."
             }
         ],
         // onFinish: () => { // Optional: if you want to do something when AI finishes
@@ -77,8 +77,8 @@ Never answer questions unrelated to this Python challenge or general Python prog
     useEffect(() => {
         const newSystemContent = getSystemMessageContent(challengeData);
         const newWelcomeContent = challengeData
-            ? "Another one trying to solve my challenge? Ask if you must, but don't expect spoon-feeding."
-            : "I'm here. Ask your Python questions. Or don't. See if I care.";
+            ? "Ask and you shall receive - within reason. Press the purple button so I can analyze your code."
+            : "Ask your python questions and I shall answer to the best of my ability.";
 
         setMessages(prevMessages => {
             const systemMsgIndex = prevMessages.findIndex(m => m.id === 'system-prompt');
@@ -144,13 +144,12 @@ Never answer questions unrelated to this Python challenge or general Python prog
             }
 
             userQuestionForDisplay = input || "Analyze my code."; // Fallback if input was cleared
-            messageContent = `Regarding the current daily Python challenge (details are in the system prompt):
-I've written the following Python code:
-\`\`\`python
+            messageContent = `
+\`\`\`
 ${editorCode}
 \`\`\`
-My question about this code is: "${userQuestionForDisplay}"
-Please analyze it.`;
+ ${userQuestionForDisplay}
+`;
             setIsCodeAnalysisNext(false); // Reset mode for the next message
         }
 
