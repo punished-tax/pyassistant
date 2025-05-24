@@ -155,10 +155,8 @@ export default function ChallengeInterfaceClient({
     if (currentTestCaseGenStatus === 'error') {
         return <p className="text-red-400 flex items-center"><AlertTriangle className="mr-2 h-4 w-4" /> Error Preparing Tests: {currentTestCaseGenError || 'Unknown error'}</p>;
     }
-    // Show generating status if applicable, even if not actively executing user code yet
-    if (currentTestCaseGenStatus === 'generating') {
-        return <p className="text-yellow-400 flex items-center"><Cog className="mr-2 h-4 w-4 animate-spin" /></p>;
-    }
+    // Show generating status if applicable, even if not actively executing user code yet - removed
+    
 
     if (isExecutingCode) { // This means user's code is running
         return <p className="text-gray-400 flex items-center"><Loader2 className="mr-2 h-4 w-4 animate-spin" /></p>;
