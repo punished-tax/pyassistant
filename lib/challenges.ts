@@ -36,7 +36,7 @@ const desiredJsonStructure = `{
   "id": "string (use the date YYYY-MM-DD)",
   "date": "string (the requested date YYYY-MM-DD)",
   "difficulty": "easy",
-  "question": "string (the problem description, about lists, strings, or more advanced data structures)",
+  "question": "string (the problem description, about lists or strings)",
   "questionTitle": "string (a condensed title for the question)",
   "inputOutput": {
     "input": "string (a single, clear sample input for display)",
@@ -87,7 +87,7 @@ async function fetchAndValidateChallengeFromOpenAI(
       messages: [
         {
           role: "system",
-          content: `You are an assistant that generates daily Python coding challenges (difficulty: easy) about lists, strings, or more advanced data structures. You ALWAYS respond with ONLY a valid JSON object matching this exact structure: ${desiredJsonStructure}. Do not include any introductory text, markdown formatting (like \`\`\`json), comments, or explanations outside the JSON structure itself. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. Provide exactly 5 distinct 'testCases' in the specified array format, ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'. ${attempt > 1 ? 'IMPORTANT: Please generate a substantially DIFFERENT challenge than any previous attempt for this date.' : ''}`
+          content: `You are an assistant that generates daily Python coding challenges (difficulty: easy) about lists or strings. The questions should be appropriate for introductory python programming courses You ALWAYS respond with ONLY a valid JSON object matching this exact structure: ${desiredJsonStructure}. Do not include any introductory text, markdown formatting (like \`\`\`json), comments, or explanations outside the JSON structure itself. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. Provide exactly 5 distinct 'testCases' in the specified array format, ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'. ${attempt > 1 ? 'IMPORTANT: Please generate a substantially DIFFERENT challenge than any previous attempt for this date.' : ''}`
         },
         {
           role: "user",
