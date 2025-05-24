@@ -6,7 +6,7 @@ import { kv } from '@vercel/kv'; // Import Vercel KV
 export interface ChallengeData {
   id: string;
   date: string; // YYYY-MM-DD
-  difficulty: 'medium';
+  difficulty: 'easy';
   question: string;
   questionTitle: string;
   inputOutput: {
@@ -122,7 +122,7 @@ async function fetchAndValidateChallengeFromOpenAI(
         !parsedData.inputOutput?.output || !parsedData.solutionHeader || !parsedData.solution ||
         !parsedData.explanation || !parsedData.testCases || !Array.isArray(parsedData.testCases) ||
         parsedData.testCases.length !== 5 || !parsedData.testCases.every(isValidTestCase) ||
-        parsedData.difficulty !== 'medium' || parsedData.date !== date
+        parsedData.difficulty !== 'easy' || parsedData.date !== date
     ) {
         console.error(`Invalid/incomplete data from OpenAI for date ${date} (Attempt ${attempt}). Validation failed.`);
         console.error("Received data:", JSON.stringify(parsedData, null, 2));
