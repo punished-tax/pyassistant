@@ -15,7 +15,7 @@ import ChallengeInterfaceClient from '@/components/challenge-interface';
 export const metadata = {
   title: "pyassistant",
   description: "Daily Python Coding Challenges",
-  icons: { icon: '/rubix.jpg' }
+  icons: { icon: '/favicon.ico' }
 };
 
 // Revalidate this page every 24 hours.

@@ -91,7 +91,7 @@ export async function generateMetadata({ params }: ChallengePageProps) {
   return {
     title: `pyassistant`,
     description: `Python Coding Challenge for ${params.date}`,
-    icons: { icon: '/rubix.jpg' }
+    icons: { icon: '/favicon.ico' }
   };
 }
 
