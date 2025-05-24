@@ -110,7 +110,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
         <h1 className="text-3xl font-mono mb-6 text-left ml-16 text-gray-100 block w-fit bg-[rgb(55,55,55)] px-2 py-1">
           Archive
         </h1>
-         <div className="flex justify-between items-center mb-6 ml-1">
+         <div className="flex justify-center items-center mb-6">
         
 
         {/* Month Navigation */}
