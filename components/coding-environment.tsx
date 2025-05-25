@@ -259,7 +259,7 @@ export default function CodingEnvironment({
        if (testCaseGenerationStatus === 'error') return { disabled: true, content: <><AlertTriangle className="mr-2 h-4 w-4 text-red-500" /> Test Prep Error</> };
        if (isInternallyExecuting) return { disabled: true, content: <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Running Code...</> };
        // Ready to submit
-       return { disabled: false, content: <><Play className="h-4 w-4 text-green-700 " /><span className="text-green-700 text-lg font-sans-serif">Submit</span></> };
+       return { disabled: false, content: <><Play className="h-4 w-4 text-green-700 " /><span className="text-green-700 text-md font-sans-serif">Submit</span></> };
    };
  
    const buttonState = getButtonState();
@@ -281,9 +281,9 @@ export default function CodingEnvironment({
             onClick={handleSubmitCode}
             disabled={buttonState.disabled}
             variant="outline"
-            className="bg-[rgb(55,55,55)] border rounded-xl border-[rgb(44,44,44)]
+            className="bg-[rgb(55,55,55)] border rounded-xl border-[rgb(55,55,55)]
                        hover:bg-[rgb(75,75,75)] disabled:opacity-60
-                       px-5 py-2 text-green-700 text-lg font-sans-serif"
+                       px-4 py-2 text-green-700 text-md font-sans-serif"
           >
             {buttonState.content}
           </Button>

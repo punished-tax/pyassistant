@@ -107,7 +107,7 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
     <>
       <Header title="pyassistant"/>
       <div className="container mx-auto p-4 md:p-8">
-        <h1 className="text-3xl font-mono mb-6 text-left ml-16 text-gray-100 block w-fit bg-[rgb(55,55,55)] px-2 py-1">
+        <h1 className="text-3xl font-mono mb-6 text-left ml-24 text-gray-100 block w-fit bg-[rgb(55,55,55)] px-2 py-1">
           Archive
         </h1>
          <div className="flex justify-center items-center mb-6">
