@@ -67,7 +67,7 @@ Never answer questions unrelated to this Python challenge or general Python prog
                 id: 'welcome-message',
                 role: 'assistant',
                 content: challengeData
-                    ? "Ask me a question if you're in trouble, or press the purple button so I can analyze your code."
+                    ? "Trying to solve my challenge? Ask if you must, or press the purple button so I can analyze your code."
                     : "Ask your python questions and I shall answer to the best of my ability."
             }
         ],
@@ -80,7 +80,7 @@ Never answer questions unrelated to this Python challenge or general Python prog
     useEffect(() => {
         const newSystemContent = getSystemMessageContent(challengeData);
         const newWelcomeContent = challengeData
-            ? "Ask me a question if you're in trouble, or press the purple button so I can analyze your code."
+            ? "Trying to solve my challenge? Ask if you must, or press the purple button so I can analyze your code."
             : "Ask your python questions and I shall answer to the best of my ability.";
 
         setMessages(prevMessages => {
