@@ -142,7 +142,20 @@ export default function ChallengeInterfaceClient({
           
          {/* only show once we have a test result */}
  {userTestResult && (
-   <div className="p-2 bg-[rgb(55,55,55)] text-white rounded text-sm font-mono w-[250px] max-w-md">
+   <div
+     className="
+       p-2           
+       bg-[rgb(55,55,55)]
+       text-white
+       rounded
+       text-xs       
+       font-mono
+       w-[300px]     
+       max-h-36      
+       overflow-y-auto
+       space-y-1     
+     "
+   >
      <RenderUserTestResult />
    </div>
  )}
@@ -194,10 +207,10 @@ export default function ChallengeInterfaceClient({
                         <p className="flex items-center font-semibold">
                             <AlertTriangle className="mr-2 h-5 w-5" /> Runtime Error
                         </p>
-                        <pre className="bg-[rgb(45,45,45)] p-1 rounded text-xs whitespace-pre-wrap break-words block">{userTestResult.error}</pre>
+                        <pre className="bg-[rgb(45,45,45)] p-1 rounded text-xs whitespace-pre overflow-x-auto block max-w-[350px]">{userTestResult.error}</pre>
                         {userTestResult.stdout && (
                             <div className="mt-1">
-                                <span className="font-medium text-gray-300">Captured Output:</span>
+                                
                                 <pre className="bg-[rgb(45,45,45)] p-1 rounded text-xs whitespace-pre-wrap break-words block">{userTestResult.stdout}</pre>
                             </div>
                         )}
@@ -277,7 +290,7 @@ export default function ChallengeInterfaceClient({
         <TodaysChallengeDisplay data={challengeData} />
       </div>
 
-      <div className="flex justify-center items-end ml-24 mb-8">
+      <div className="flex justify-center items-end ml-24 mb-12">
         <div className="w-[600px] h-[500px] mr-4">
           <CodingEnvironment
             key={instanceKey}
