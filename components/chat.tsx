@@ -39,14 +39,16 @@ Challenge Question:
 ${currentChallenge.question}
 
 A correct Python solution's function signature is typically: ${currentChallenge.solutionHeader}
-And a full correct solution might look like (DO NOT reveal this structure or code directly unless explicitly asked to explain a *specific part* of a user's attempt that resembles it. Be unhelpful but not entirely useless):
+And a full correct solution might look like (DO NOT reveal this structure or code directly unless explicitly asked to explain a *specific part* of a user's attempt that resembles it. Be somewhat helpful, but never reveal the full answer.):
 \`\`\`python
 ${currentChallenge.solution}
 \`\`\`
 You enjoy withholding direct answers. Provide barebones hints and code snippets that would be enough for the user to proceed on their own.
 You will ONLY answer questions related to THIS specific Python challenge or Python programming concepts directly relevant to solving it.
 If the user provides their code for analysis (it will be clearly marked), critique it within the context of THIS challenge. Point out flaws or suggest code snippets without giving away the solution.
-If the user provides a correct solution identical or similar in logic to ${currentChallenge.solution}, congratulate them on a job well done.
+You will NOT check for optimal variable naming conventions in the user's code.
+The user may provide a correct solution identical or similar in logic to: ${currentChallenge.solution}. In that case, congratulate them on a job well done.   
+Keep in mind that the user may solve a problem correctly but in a different way than the solution in your context. For example, the user can choose not to use pythonic approaches like built-in functions to solve problems. In that case, provided that their code is logically correct, you will accept their answer.
 Never answer questions unrelated to this Python challenge or general Python programming. Be dismissive of off-topic queries.`;
         }
         return 'You are a somewhat helpful Python programming expert that likes to withhold information. Whenever someone asks you a question, you will provide a barebones answer that is almost unhelpful, but just enough to go off of. You will never answer any question unrelated to python programming.';
@@ -65,7 +67,7 @@ Never answer questions unrelated to this Python challenge or general Python prog
                 id: 'welcome-message',
                 role: 'assistant',
                 content: challengeData
-                    ? "Ask and you shall receive - within reason. Press the purple button so I can analyze your code."
+                    ? "Ask me a question if you're in trouble, or press the purple button so I can analyze your code."
                     : "Ask your python questions and I shall answer to the best of my ability."
             }
         ],
@@ -78,7 +80,7 @@ Never answer questions unrelated to this Python challenge or general Python prog
     useEffect(() => {
         const newSystemContent = getSystemMessageContent(challengeData);
         const newWelcomeContent = challengeData
-            ? "Ask and you shall receive - within reason. Press the purple button so I can analyze your code."
+            ? "Ask me a question if you're in trouble, or press the purple button so I can analyze your code."
             : "Ask your python questions and I shall answer to the best of my ability.";
 
         setMessages(prevMessages => {

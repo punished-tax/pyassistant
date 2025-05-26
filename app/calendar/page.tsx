@@ -40,10 +40,10 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
             </DialogTrigger>
             <DialogContent className="border rounded-xl border-[rgb(34,34,34)] bg-[rgb(34,34,34)] p-6 ">
               <DialogHeader>
-                <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>About PyAssistant</DialogTitle>
+                <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>PyAssistant - Daily Python Challenges</DialogTitle>
               </DialogHeader>
-              <p>PyAssistant is a daily coding game that tests your python skills. The coding assistant has the given question in its context so it can give you general tips and code snippets if you're in any trouble. You can also have it analyze your code by clicking the purple button and typing in your question. </p>
-              <p>The questions are fetched from ChatGPT every 24 hours and they vary between easy and medium difficulty.</p>
+              <p>PyAssistant is a daily coding game that tests your python skills. The coding assistant has the given question in its context so it can give you general tips and code snippets if you're in any trouble. It also has the ability to analyze your code by clicking the purple button and typing in your question. </p>
+              <p>The questions are fetched from ChatGPT every 24 hours. They are meant to be a fair challenge for beginners who are learning to code.</p>
             </DialogContent>
           </Dialog>
         </div>

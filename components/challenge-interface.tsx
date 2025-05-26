@@ -140,10 +140,12 @@ export default function ChallengeInterfaceClient({
           </div>
           <h3 className="text-sm prose mt-2 text-gray-200">Make sure you return your solution, don't print!</h3>
           
-        {/* <<< RENDER RESULTS SECTION HERE >>> */}
-          <div className="p-2 bg-[rgb(55,55,55)] text-white rounded text-sm font-mono w-[250px] max-w-md"> {/* Adjusted width */}
-            <RenderUserTestResult />
-          </div>
+         {/* only show once we have a test result */}
+ {userTestResult && (
+   <div className="p-2 bg-[rgb(55,55,55)] text-white rounded text-sm font-mono w-[250px] max-w-md">
+     <RenderUserTestResult />
+   </div>
+ )}
         </section>
       </div>
     );
