@@ -238,7 +238,7 @@ export default function ChallengeInterfaceClient({
              return (
                  <div className="text-orange-400 space-y-1 text-xs"> {/* Text size xs for consistency */}
                      <p className="flex items-center font-semibold"><AlertTriangle className="mr-2 h-5 w-5" /> Execution Error</p>
-                    <p>Could not run your code.</p>
+                    <p>Could not run your code. Maybe you have an indentation error/forgot to return a value.</p>
                     
                     
                  </div>
