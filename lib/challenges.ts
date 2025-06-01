@@ -6,7 +6,7 @@ import { kv } from '@vercel/kv'; // Import Vercel KV
 export interface ChallengeData {
   id: string;
   date: string; // YYYY-MM-DD
-  difficulty: 'hard';
+  difficulty: 'medium';
   question: string;
   questionTitle: string;
   inputOutput: {
@@ -35,8 +35,8 @@ const openai = new OpenAI({
 const desiredJsonStructure = `{
   "id": "string (use the date YYYY-MM-DD)",
   "date": "string (the requested date YYYY-MM-DD)",
-  "difficulty": "hard",
-  "question": "string (the problem description, about intermediate level data structures.)",
+  "difficulty": "medium",
+  "question": "string (the problem description, about lists or strings.)",
   "questionTitle": "string (a condensed title for the question)",
   "inputOutput": {
     "input": "string (a single, clear sample input for display)",
@@ -87,7 +87,7 @@ async function fetchAndValidateChallengeFromOpenAI(
       messages: [
         {
           role: "system",
-          content: `You are an assistant that generates daily Python coding challenges (difficulty: hard). The questions should be about intermediate level data structures. You ALWAYS respond with ONLY a valid JSON object matching this exact structure: ${desiredJsonStructure}. Do not include any introductory text, markdown formatting (like \`\`\`json), comments, or explanations outside the JSON structure itself. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. Provide exactly 5 distinct 'testCases' in the specified array format, ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'. ${attempt > 1 ? 'IMPORTANT: Please generate a substantially DIFFERENT challenge than any previous attempt for this date.' : ''}`
+          content: `You are an assistant that generates daily Python coding challenges (difficulty: medium) about lists or strings. You ALWAYS respond with ONLY a valid JSON object matching this exact structure: ${desiredJsonStructure}. Do not include any introductory text, markdown formatting (like \`\`\`json), comments, or explanations outside the JSON structure itself. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. Provide exactly 5 distinct 'testCases' in the specified array format, ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'. ${attempt > 1 ? 'IMPORTANT: Please generate a substantially DIFFERENT challenge than any previous attempt for this date.' : ''}`
         },
         {
           role: "user",
@@ -122,7 +122,7 @@ async function fetchAndValidateChallengeFromOpenAI(
         !parsedData.inputOutput?.output || !parsedData.solutionHeader || !parsedData.solution ||
         !parsedData.explanation || !parsedData.testCases || !Array.isArray(parsedData.testCases) ||
         parsedData.testCases.length !== 5 || !parsedData.testCases.every(isValidTestCase) ||
-        parsedData.difficulty !== 'hard' || parsedData.date !== date
+        parsedData.difficulty !== 'medium' || parsedData.date !== date
     ) {
         console.error(`Invalid/incomplete data from OpenAI for date ${date} (Attempt ${attempt}). Validation failed.`);
         console.error("Received data:", JSON.stringify(parsedData, null, 2));
