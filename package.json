@@ -24,7 +24,7 @@
     "@uiw/react-codemirror": "^4.23.10",
     "@upstash/redis": "^1.34.9",
     "@vercel/kv": "^3.0.0",
-    "ai": "^4.1.40",
+    "ai": "^5.0.108",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^0.475.0",
