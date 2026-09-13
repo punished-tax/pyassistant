@@ -1,5 +1,1 @@
-PyAssistant: daily, simple python challenges to refresh your coding knowledge. 
-
-Admit it, you aren't as good at coding as you think you are. No shame in that. However, staying bad will only decrease your chances at success. I'd hate that for you. So get practicing already before it's too late.
-
-Challenges refreshed every day with medium difficulty. Chatbot (GPT-4) ready to assist you, but no giveaways!
+A Leetcode and Wordle fusion that tests your mettle in python programming. Alongside your daily problem is an assistant that is purposely holding back information and will only give you hints. The assistant has the question in its context and it will allude to you ideas of how to approach a solution. Any attempt at a solution can also be sent to the assistant by pressing the circular purple button and typing in your question. 
