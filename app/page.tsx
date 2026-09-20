@@ -14,7 +14,7 @@ import ChallengeInterfaceClient from '@/components/challenge-interface';
 
 export const metadata = {
   title: "pyassistant",
-  description: "Daily Python Coding Challenges",
+  description: "Daily Python Challenges",
   icons: { icon: '/favicon.ico' }
 };
 
