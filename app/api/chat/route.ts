@@ -1,18 +1,16 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { streamText, convertToModelMessages, type UIMessage } from 'ai';
 
 // Allow responses up to 5 minutes
 export const maxDuration = 300;
 
-export const runtime = 'edge'
-
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages }: { messages: UIMessage[] } = await req.json();
 
   const result = streamText({
-    model: openai('gpt-4o-mini'),
-    messages,
+    model: openai('gpt-5-mini'),
+    messages: convertToModelMessages(messages),
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }

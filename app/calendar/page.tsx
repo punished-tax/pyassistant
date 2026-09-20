@@ -59,10 +59,10 @@ function getTodayDateString(): string {
 
 // Props for the page, including searchParams for year and month
 interface CalendarPageProps {
-  searchParams: {
+  searchParams: Promise<{
     year?: string;
     month?: string;
-  };
+  }>;
 }
 
 export default async function CalendarPage({ searchParams }: CalendarPageProps) {
@@ -71,8 +71,9 @@ export default async function CalendarPage({ searchParams }: CalendarPageProps) 
   let displayMonth = today.getMonth() + 1; // 1-12
 
   // Safely access searchParams properties
-  const queryYear = searchParams?.year;
-  const queryMonth = searchParams?.month;
+  const resolvedSearchParams = await searchParams;
+  const queryYear = resolvedSearchParams?.year;
+  const queryMonth = resolvedSearchParams?.month;
 
   if (queryYear && !isNaN(parseInt(queryYear))) {
     displayYear = parseInt(queryYear);

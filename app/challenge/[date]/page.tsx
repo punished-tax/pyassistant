@@ -81,24 +81,23 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
 
 // Type for page parameters
 interface ChallengePageProps {
-  params: {
+  params: Promise<{
     date: string; // This will be 'YYYY-MM-DD'
-  };
+  }>;
 }
 
 // Dynamic metadata for the page title
 export async function generateMetadata({ params }: ChallengePageProps) {
+  const { date } = await params;
   return {
     title: `pyassistant`,
-    description: `Python Coding Challenge for ${params.date}`,
+    description: `Python Coding Challenge for ${date}`,
     icons: { icon: '/favicon.ico' }
   };
 }
 
-export const runtime = 'edge'; // Vercel KV and OpenAI SDK v4 are Edge compatible
-
 export default async function ChallengePage({ params }: ChallengePageProps) {
-  const { date } = params;
+  const { date } = await params;
 
   // Validate date format from URL parameter
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {

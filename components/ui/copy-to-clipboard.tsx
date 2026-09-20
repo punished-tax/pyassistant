@@ -1,18 +1,17 @@
 'use client'
 
 import { cn } from '@/lib/utils'
-import { type Message } from 'ai'
 
 import { Button } from '@/components/ui/button'
 import { CheckIcon, CopyIcon } from 'lucide-react'
 import { useClipboard } from '@/app/hooks/use-clipboard'
 
 interface ChatMessageActionsProps extends React.ComponentProps<'div'> {
-  message: Message
+  text: string
 }
 
 export default function CopyToClipboard({
-  message,
+  text,
   className,
   ...props
 }: ChatMessageActionsProps) {
@@ -20,7 +19,7 @@ export default function CopyToClipboard({
 
   const onCopy = () => {
     if (isCopied) return
-    copyToClipboard(message.content)
+    copyToClipboard(text)
   }
 
   return (

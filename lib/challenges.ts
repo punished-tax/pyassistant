@@ -1,6 +1,9 @@
 // lib/challenges.ts
 import OpenAI from 'openai';
-import { kv } from '@vercel/kv'; // Import Vercel KV
+import { Redis } from '@upstash/redis';
+
+// Reads UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN from the environment.
+const kv = Redis.fromEnv();
 
 // ChallengeData interface remains the same
 export interface ChallengeData {
@@ -83,7 +86,7 @@ async function fetchAndValidateChallengeFromOpenAI(
 
   try {
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-5-mini",
       messages: [
         {
           role: "system",
@@ -94,14 +97,19 @@ async function fetchAndValidateChallengeFromOpenAI(
           content: `Generate the Python coding challenge for the date: ${date}. Ensure the 'id' and 'date' fields in the JSON match this date. Provide 5 distinct test cases in addition to the main example.`
         },
       ],
-      temperature: attempt > 1 ? 0.75 : 0.6, // Slightly higher temperature on retry
-      max_tokens: 2500,
+      // gpt-5-mini doesn't support `temperature`; retry variation comes from the
+      // "generate a substantially different challenge" instruction in the prompt above.
+      // reasoning_effort is kept low since this is a straightforward structured-output
+      // task — otherwise the model can burn the whole token budget on hidden reasoning
+      // tokens and return empty content.
+      reasoning_effort: "low",
+      max_completion_tokens: 4000,
       response_format: { type: "json_object" }
     });
 
     const content = completion.choices[0]?.message?.content;
     if (!content) {
-      console.error(`OpenAI response content is empty for date: ${date} (Attempt ${attempt})`);
+      console.error(`OpenAI response content is empty for date: ${date} (Attempt ${attempt}). Usage:`, JSON.stringify(completion.usage));
       return null;
     }
 

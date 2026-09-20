@@ -18,10 +18,14 @@ export const metadata = {
   icons: { icon: '/favicon.ico' }
 };
 
-// Revalidate this page every 24 hours.
-// When revalidated, getChallengeDataForDate(today) will be called.
-// If it's a new "today", and data isn't in cache, OpenAI will be hit, and then cached.
-export const revalidate = 86400; // 24 hours in seconds
+// This page depends on the current date and on live Redis/OpenAI state, so it
+// can never be meaningfully static — force-dynamic skips Next's build-time
+// static-generation attempt, which would otherwise call OpenAI and write to
+// Redis on every `next build` (it always bails out to dynamic anyway, since
+// the Redis client's fetches aren't cacheable, but not before spending the
+// OpenAI call). Caching of challenge data itself is already handled by Redis
+// in getChallengeDataForDate.
+export const dynamic = 'force-dynamic';
 
 // Helper to generate default editor code (same as before)
 function generateInitialCode(challengeData: ChallengeData | null): string {
@@ -64,9 +68,9 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
             </DialogTrigger>
             <DialogContent className="border rounded-xl border-[rgb(34,34,34)] bg-[rgb(34,34,34)] p-6 ">
               <DialogHeader>
-                <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>PyAssistant - Daily Python Challenges</DialogTitle>
+                <DialogTitle className='block w-fit text-xl font-mono bg-[rgb(55,55,55)] px-2 py-1'>pyassistant - Daily Python Challenges</DialogTitle>
               </DialogHeader>
-              <p>PyAssistant is a daily coding game that tests your python skills. The coding assistant has the given question in its context so it can give you general tips and code snippets if you're in any trouble. It also has the ability to analyze your code by clicking the purple button and typing in your question. </p>
+              <p>pyassistant is a daily coding game that tests your python skills. The coding assistant has the given question in its context so it can give you general tips and code snippets if you're in any trouble. It also has the ability to analyze your code by clicking the purple button and typing in your question. </p>
               <p>The questions are fetched from ChatGPT every 24 hours. They are meant to be a fair challenge for beginners who are learning to code.</p>
             </DialogContent>
           </Dialog>
@@ -77,8 +81,6 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
 };
 
 // Loading component remains the same
-
-export const runtime = 'edge'; // Ensure this is compatible with all operations
 
 export default async function Home() {
   const today = getTodayDateString();

@@ -1,7 +1,8 @@
 // chat.tsx
 'use client'
 
-import { useChat } from '@ai-sdk/react' // Added Message type
+import { useChat } from '@ai-sdk/react'
+import type { UIMessage } from 'ai'
 import { useEffect, useRef, useState } from 'react' // Added useState
 import { Input } from './ui/input'
 import { Button } from './ui/button'
@@ -54,27 +55,34 @@ Never answer questions unrelated to this Python challenge or general Python prog
         return 'You are a somewhat helpful Python programming expert that likes to withhold information. Whenever someone asks you a question, you will provide a barebones answer that is almost unhelpful, but just enough to go off of. You will never answer any question unrelated to python programming.';
     };
 
-    const { messages, input, handleInputChange, handleSubmit, isLoading, error, setMessages, append, setInput } = // Added setInput
-    useChat({
-        // api: '/api/chat', // ensure your API route is correctly configured if not default
-        initialMessages: [
+    const [input, setInput] = useState('');
+    const { messages, status, error, setMessages, sendMessage } =
+    useChat<UIMessage>({
+        messages: [
             {
                 id: 'system-prompt', // Stable ID for easier updates
                 role: 'system',
-                content: getSystemMessageContent(challengeData)
+                parts: [{ type: 'text', text: getSystemMessageContent(challengeData) }]
             },
             {
                 id: 'welcome-message',
                 role: 'assistant',
-                content: challengeData
+                parts: [{ type: 'text', text: challengeData
                     ? "Trying to solve my challenge? Ask if you must, or press the purple button so I can analyze your code."
-                    : "Ask your python questions and I shall answer to the best of my ability."
+                    : "Ask your python questions and I shall answer to the best of my ability." }]
             }
         ],
         // onFinish: () => { // Optional: if you want to do something when AI finishes
         //     if (isCodeAnalysisNext) setIsCodeAnalysisNext(false); // Reset after analysis response
         // }
     });
+    const isLoading = status === 'submitted' || status === 'streaming';
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => setInput(e.target.value);
+
+    // Helper to read the plain text out of a UIMessage's parts array
+    const getMessageText = (parts: { type: string; text?: string }[]): string =>
+        parts.filter(p => p.type === 'text').map(p => p.text).join('');
 
     // Effect to update system prompt if challengeData changes
     useEffect(() => {
@@ -89,13 +97,13 @@ Never answer questions unrelated to this Python challenge or general Python prog
             const updatedMessages = [...prevMessages];
 
             if (systemMsgIndex !== -1) {
-                updatedMessages[systemMsgIndex] = { ...updatedMessages[systemMsgIndex], content: newSystemContent };
-            } else { // Should not happen if initialMessages are set up
-                updatedMessages.unshift({ id: 'system-prompt', role: 'system', content: newSystemContent });
+                updatedMessages[systemMsgIndex] = { ...updatedMessages[systemMsgIndex], parts: [{ type: 'text', text: newSystemContent }] };
+            } else { // Should not happen if initial messages are set up
+                updatedMessages.unshift({ id: 'system-prompt', role: 'system', parts: [{ type: 'text', text: newSystemContent }] });
             }
 
             if (welcomeMsgIndex !== -1 && prevMessages.length <=2) { // Only update welcome if it's among the first few messages
-                 updatedMessages[welcomeMsgIndex] = { ...updatedMessages[welcomeMsgIndex], content: newWelcomeContent };
+                 updatedMessages[welcomeMsgIndex] = { ...updatedMessages[welcomeMsgIndex], parts: [{ type: 'text', text: newWelcomeContent }] };
             }
 
 
@@ -159,16 +167,8 @@ ${editorCode}
         if (!messageContent.trim()) return;
 
 
-        await append({
-            id: Date.now().toString(),
-            role: 'user',
-            content: messageContent,
-        });
-        // `append` handles adding to `messages` and calling API.
-        // `useChat` usually clears input via `handleInputChange` if it's typed,
-        // but since we use `append` directly, we might need to clear it.
-        // However, `append` might be clearing `input` internally if it's bound. Let's test.
-        // If not, add:
+        await sendMessage({ text: messageContent });
+        // `sendMessage` handles adding to `messages` and calling API; input is our own state, so clear it.
         setInput('');
     };
 
@@ -185,7 +185,9 @@ ${editorCode}
             <div className="flex flex-col h-full border-2 border-[rgb(75,75,75)] rounded-2xl bg-black overflow-hidden">
               <ScrollArea className="flex-1 min-h-0 p-12" ref={scrollAreaRef}>
                 {error && ( <div className="text-sm font-mono text-red-400">{error.message}</div> )}
-                {messages.map(m => (
+                {messages.map(m => {
+                    const text = getMessageText(m.parts);
+                    return (
                     <div key={m.id} className='mr-6 whitespace-pre-wrap md:mr-12'>
                         {m.role === 'user' && (
                             <div className='mb-6 flex gap-3'>
@@ -196,12 +198,12 @@ ${editorCode}
                                 <div className='mt-1.5'>
                                     <p className='font-mono text-blue-500'>You</p>
                                     <div className='mt-1.5 text-sm font-mono text-gray-200'>
-                                        {m.content}
+                                        {text}
                                     </div>
                                 </div>
                             </div>
                         )}
-                        {m.role === 'assistant' && m.content && /* Ensure content exists */ (
+                        {m.role === 'assistant' && text && /* Ensure content exists */ (
                             <div className='mb-6 flex gap-3'>
                                 <Avatar>
                                     <AvatarImage src=''/>
@@ -210,16 +212,17 @@ ${editorCode}
                                 <div className='mt-1.5 w-full'>
                                     <div className='flex justify-between'>
                                         <p className='font-mono text-orange-600'>Bot</p>
-                                        <CopytoClipboard message={m} className='-mt-1' />
+                                        <CopytoClipboard text={text} className='-mt-1' />
                                     </div>
                                     <div className='mt-2 text-sm font-mono text-gray-200'>
-                                        {m.content}
+                                        {text}
                                     </div>
                                 </div>
                             </div>
                         )}
                     </div>
-                ))}
+                    );
+                })}
                 {isLoading && (
                     <div className="ml-10 flex items-center space-x-2 text-zinc-400 p-4">
                         <div className="animate-bounce">•</div>
