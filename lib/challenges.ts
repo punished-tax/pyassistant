@@ -1,5 +1,7 @@
 // lib/challenges.ts
-import OpenAI from 'openai';
+import { generateObject, NoObjectGeneratedError } from 'ai';
+import { openai } from '@ai-sdk/openai';
+import { z } from 'zod';
 import { Redis } from '@upstash/redis';
 
 // Reads UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN from the environment.
@@ -30,32 +32,23 @@ export interface AvailableChallengeInfo {
   questionTitle: string;
 }
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+// Schema for the model's response. 'id'/'date'/'difficulty' aren't asked for here since
+// we control those ourselves rather than trusting the model to echo them back correctly.
+const challengeSchema = z.object({
+  question: z.string().describe('The problem description, about lists or strings.'),
+  questionTitle: z.string().describe('A condensed title for the question.'),
+  inputOutput: z.object({
+    input: z.string().describe('A single, clear sample input for display.'),
+    output: z.string().describe('The corresponding sample output for display.'),
+  }),
+  solutionHeader: z.string().describe("The Python function signature needed for the solution; the function must be named 'solve'."),
+  solution: z.string().describe("A correct Python code solution containing only the 'solve' function defined by solutionHeader."),
+  explanation: z.string().describe('A clear explanation of the Python solution approach.'),
+  testCases: z.array(z.object({
+    input: z.string().describe('Input for this test case, represented as a Python literal.'),
+    output: z.string().describe('Expected output for this test case, represented as a Python literal.'),
+  })).length(5),
 });
-
-// desiredJsonStructure remains the same
-const desiredJsonStructure = `{
-  "id": "string (use the date YYYY-MM-DD)",
-  "date": "string (the requested date YYYY-MM-DD)",
-  "difficulty": "medium",
-  "question": "string (the problem description, about lists or strings.)",
-  "questionTitle": "string (a condensed title for the question)",
-  "inputOutput": {
-    "input": "string (a single, clear sample input for display)",
-    "output": "string (the corresponding sample output for display)"
-  },
-  "solutionHeader": "string (The Python function signature needed for the solution, the function HAS to be named 'solve')",
-  "solution": "string (a correct Python code solution including the 'solve' function defined by solutionHeader)",
-  "explanation": "string (a clear explanation of the Python solution approach)",
-  "testCases": [
-    { "input": "string (input for test case 1, potentially multi-line, represent lists/dicts as Python literals)", "output": "string (expected output for test case 1, represent lists/dicts as Python literals)" },
-    { "input": "string (input for test case 2)", "output": "string (expected output for test case 2)" },
-    { "input": "string (input for test case 3)", "output": "string (expected output for test case 3)" },
-    { "input": "string (input for test case 4)", "output": "string (expected output for test case 4)" },
-    { "input": "string (input for test case 5)", "output": "string (expected output for test case 5)" }
-  ]
-}`;
 
 // --- Helper functions for hashing (Edge compatible) ---
 function normalizeQuestionText(text: string): string {
@@ -76,7 +69,7 @@ async function generateContentHash(content: string): Promise<string> {
 async function fetchAndValidateChallengeFromOpenAI(
   date: string,
   attempt: number = 1
-): Promise<ChallengeData | 'duplicate_detected' | null> {
+): Promise<ChallengeData | 'duplicate_detected' | 'unsafe_solution_pattern' | null> {
   if (!process.env.OPENAI_API_KEY) {
     console.error("OPENAI_API_KEY environment variable not set.");
     return null;
@@ -85,56 +78,28 @@ async function fetchAndValidateChallengeFromOpenAI(
   console.log(`Requesting challenge data from OpenAI for date: ${date} (Attempt: ${attempt})`);
 
   try {
-    const completion = await openai.chat.completions.create({
-      model: "gpt-5-mini",
-      messages: [
-        {
-          role: "system",
-          content: `You are an assistant that generates daily Python coding challenges (difficulty: medium) about lists or strings. You ALWAYS respond with ONLY a valid JSON object matching this exact structure: ${desiredJsonStructure}. Do not include any introductory text, markdown formatting (like \`\`\`json), comments, or explanations outside the JSON structure itself. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. Provide exactly 5 distinct 'testCases' in the specified array format, ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'. ${attempt > 1 ? 'IMPORTANT: Please generate a substantially DIFFERENT challenge than any previous attempt for this date.' : ''}`
-        },
-        {
-          role: "user",
-          content: `Generate the Python coding challenge for the date: ${date}. Ensure the 'id' and 'date' fields in the JSON match this date. Provide 5 distinct test cases in addition to the main example.`
-        },
-      ],
+    const { object: parsedData } = await generateObject({
+      model: openai('gpt-5-mini'),
+      schema: challengeSchema,
+      system: `You are an assistant that generates daily Python coding challenges (difficulty: medium) about lists or strings. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. The 'solution' MUST be a single self-contained 'solve' function that takes its input ONLY through its parameters (matching 'solutionHeader' exactly) and returns its answer with a 'return' statement. NEVER read input via input(), sys.stdin, or any other stdin/console mechanism, and NEVER include an 'if __name__ == "__main__":' block or any top-level code that calls 'solve' itself — the caller invokes 'solve' directly with already-parsed arguments. This rule applies no matter how algorithmically involved the problem is (e.g. dynamic programming, graphs, backtracking) — do not fall back to a stdin/stdout competitive-programming script style for harder problems. Provide exactly 5 distinct 'testCases', ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'. ${attempt > 1 ? 'IMPORTANT: Please generate a substantially DIFFERENT challenge than any previous attempt for this date.' : ''}`,
+      prompt: `Generate the Python coding challenge for the date: ${date}. Provide 5 distinct test cases in addition to the main example.`,
       // gpt-5-mini doesn't support `temperature`; retry variation comes from the
-      // "generate a substantially different challenge" instruction in the prompt above.
+      // "generate a substantially different challenge" instruction in the system prompt.
       // reasoning_effort is kept low since this is a straightforward structured-output
       // task — otherwise the model can burn the whole token budget on hidden reasoning
-      // tokens and return empty content.
-      reasoning_effort: "low",
-      max_completion_tokens: 4000,
-      response_format: { type: "json_object" }
+      // tokens and return no object.
+      providerOptions: { openai: { reasoningEffort: 'low' } },
+      maxOutputTokens: 4000,
     });
 
-    const content = completion.choices[0]?.message?.content;
-    if (!content) {
-      console.error(`OpenAI response content is empty for date: ${date} (Attempt ${attempt}). Usage:`, JSON.stringify(completion.usage));
-      return null;
-    }
-
-    let parsedData: Partial<ChallengeData>;
-    try {
-      parsedData = JSON.parse(content);
-    } catch (parseError) {
-      console.error(`Failed to parse JSON response from OpenAI for date ${date} (Attempt ${attempt}):`, parseError);
-      console.error("Raw OpenAI response content:", content);
-      return null;
-    }
-
-    const isValidTestCase = (tc: any): tc is { input: string; output: string } =>
-        tc && typeof tc.input === 'string' && typeof tc.output === 'string';
-
-    if (
-        !parsedData.question || !parsedData.questionTitle || !parsedData.inputOutput?.input ||
-        !parsedData.inputOutput?.output || !parsedData.solutionHeader || !parsedData.solution ||
-        !parsedData.explanation || !parsedData.testCases || !Array.isArray(parsedData.testCases) ||
-        parsedData.testCases.length !== 5 || !parsedData.testCases.every(isValidTestCase) ||
-        parsedData.difficulty !== 'medium' || parsedData.date !== date
-    ) {
-        console.error(`Invalid/incomplete data from OpenAI for date ${date} (Attempt ${attempt}). Validation failed.`);
-        console.error("Received data:", JSON.stringify(parsedData, null, 2));
-        return null;
+    // Guard against the model falling back to a stdin/stdout competitive-programming style
+    // instead of a plain parameter-based function (the harness always calls solve(...) with
+    // parsed arguments directly, never via stdin) — this has been observed on harder/DP
+    // problems despite the system prompt forbidding it.
+    const unsafePatternRegex = /\bsys\s*\.\s*stdin\b|\binput\s*\(|__name__\s*==\s*['"]__main__['"]/;
+    if (unsafePatternRegex.test(parsedData.solution!)) {
+        console.warn(`Unsafe solution pattern (stdin/__main__) detected for date ${date} (Attempt ${attempt}). Question: "${parsedData.questionTitle}"`);
+        return 'unsafe_solution_pattern';
     }
 
     // Check for duplicate hash BEFORE forming the full ChallengeData object to save a bit of work
@@ -155,18 +120,18 @@ async function fetchAndValidateChallengeFromOpenAI(
 
     // If not a duplicate and passes validation, construct the full object
     const challengeDataFromOpenAI: ChallengeData = {
-        id: date, date: parsedData.date, difficulty: parsedData.difficulty,
+        id: date, date: date, difficulty: 'medium',
         question: parsedData.question, questionTitle: parsedData.questionTitle,
         inputOutput: { input: parsedData.inputOutput.input, output: parsedData.inputOutput.output },
-        solutionHeader: parsedData.solutionHeader as string, solution: parsedData.solution,
+        solutionHeader: parsedData.solutionHeader, solution: parsedData.solution,
         explanation: parsedData.explanation,
-        testCases: parsedData.testCases as Array<{ input: string; output: string }>,
+        testCases: parsedData.testCases,
     };
     return challengeDataFromOpenAI;
 
   } catch (error) {
-    if (error instanceof OpenAI.APIError) {
-        console.error(`OpenAI API Error for date ${date} (Attempt ${attempt}): ${error.status} ${error.name}`, error.message);
+    if (NoObjectGeneratedError.isInstance(error)) {
+        console.error(`Model failed to generate a schema-conforming object for date ${date} (Attempt ${attempt}): ${error.message}`);
     } else {
         console.error(`Error fetching/processing OpenAI data for date ${date} (Attempt ${attempt}):`, error);
     }
@@ -189,26 +154,26 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
   try {
     const cachedData = await kv.get<ChallengeData>(cacheKey);
     if (cachedData && cachedData.id === date && cachedData.question) {
-      // console.log(`Serving challenge data for ${date} from Vercel KV cache.`);
+      // console.log(`Serving challenge data for ${date} from Redis cache.`);
       return cachedData;
     }
   } catch (error) {
-    console.error(`Error fetching from Vercel KV for ${date} (key: ${cacheKey}):`, error);
+    console.error(`Error fetching from Redis for ${date} (key: ${cacheKey}):`, error);
   }
 
   // 2. Not in cache, try to fetch from OpenAI (with retry logic for duplicates)
-  let fetchedChallenge: ChallengeData | 'duplicate_detected' | null = null;
+  let fetchedChallenge: ChallengeData | 'duplicate_detected' | 'unsafe_solution_pattern' | null = null;
   const maxAttempts = 2; // Initial attempt + 1 retry
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     fetchedChallenge = await fetchAndValidateChallengeFromOpenAI(date, attempt);
 
-    if (fetchedChallenge === 'duplicate_detected') {
+    if (fetchedChallenge === 'duplicate_detected' || fetchedChallenge === 'unsafe_solution_pattern') {
       if (attempt < maxAttempts) {
-        console.log(`Duplicate detected on attempt ${attempt} for ${date}. Retrying...`);
+        console.log(`${fetchedChallenge} on attempt ${attempt} for ${date}. Retrying...`);
         continue; // Go to next iteration to retry
       } else {
-        console.warn(`Duplicate detected on final attempt (${attempt}) for ${date}. Giving up.`);
+        console.warn(`${fetchedChallenge} on final attempt (${attempt}) for ${date}. Giving up.`);
         return null; // Mark as null (no challenge for this date after retries)
       }
     }
@@ -242,7 +207,7 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
       console.log(`Stored challenge for ${date} in KV. Hash: ${finalHash}`);
       return challengeToStore;
     } catch (kvError) {
-      console.error(`Error storing data in Vercel KV for date ${date}:`, kvError);
+      console.error(`Error storing data in Redis for date ${date}:`, kvError);
       // Return the fetched data even if KV store fails, but log it.
       // Or decide to return null if KV store is critical.
       return challengeToStore;
@@ -309,7 +274,7 @@ export async function getAvailableChallengesInfo(): Promise<AvailableChallengeIn
     return challengesInfo;
 
   } catch (error) {
-    console.error(`Error fetching available challenge dates/info from Vercel KV:`, error);
+    console.error(`Error fetching available challenge dates/info from Redis:`, error);
     return []; // Return empty array on error
   }
 }

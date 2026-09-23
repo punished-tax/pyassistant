@@ -51,6 +51,11 @@ export async function getPyodide(): Promise<PyodideInterface> {
         window.loadPyodide({ indexURL })
             .then(loadedPyodide => {
                 console.log('Pyodide initialized successfully (pre-loaded script)!');
+                // Any attempt to read stdin (e.g. input()/sys.stdin from a solution written
+                // for stdin-based I/O) would otherwise fall back to window.prompt(), which
+                // isn't available here and crashes with an uncatchable JS error. Make it a
+                // normal, catchable Python-level error instead.
+                loadedPyodide.setStdin({ error: true });
                 pyodideInstance = loadedPyodide;
                 resolve(loadedPyodide);
             })
@@ -81,6 +86,8 @@ export async function getPyodide(): Promise<PyodideInterface> {
       window.loadPyodide({ indexURL })
         .then(loadedPyodide => {
           console.log('Pyodide initialized successfully!');
+          // See comment in the pre-loaded-script branch above.
+          loadedPyodide.setStdin({ error: true });
           pyodideInstance = loadedPyodide;
           resolve(loadedPyodide);
         })
@@ -147,6 +154,12 @@ export async function runReferenceSolution(
       pyodide.globals.set('js_ref_solution_code', referenceSolutionCode);
       try {
            await pyodide.runPythonAsync(`
+            # __name__ is '__main__' in this shared top-level namespace, which would make
+            # a solution's own "if __name__ == '__main__': solve()" guard fire immediately
+            # during load (with no arguments, and possibly reading real stdin) instead of
+            # waiting for our controlled call below. Neutralize it so loading only *defines*
+            # 'solve' rather than running it.
+            __name__ = '__pyassistant_reference__'
             exec(js_ref_solution_code, globals())
             # Optional: Add debug prints here if needed, e.g., print("[PYTHON REF DEBUG] Ref code executed")
             del js_ref_solution_code
@@ -261,6 +274,9 @@ export async function runPythonCodeWithTests(
 
       console.log("Loading user code...");
       try {
+          // Same __main__ guard issue as the reference solution: neutralize __name__ so a
+          // user's "if __name__ == '__main__':" block doesn't self-execute during load.
+          pyodide.runPython("__name__ = '__pyassistant_user__'");
           await pyodide.runPythonAsync(userCode);
       } catch (loadError: any) {
            const rawLoadStderr = pyodide.runPython("_global_stderr_buffer.getvalue()") || "";
