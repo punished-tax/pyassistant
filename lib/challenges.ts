@@ -1,5 +1,5 @@
 // lib/challenges.ts
-import { generateObject, NoObjectGeneratedError } from 'ai';
+import { generateObject, embed, embedMany, cosineSimilarity, NoObjectGeneratedError } from 'ai';
 import { openai } from '@ai-sdk/openai';
 import { z } from 'zod';
 import { Redis } from '@upstash/redis';
@@ -7,11 +7,21 @@ import { Redis } from '@upstash/redis';
 // Reads UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN from the environment.
 const kv = Redis.fromEnv();
 
+export type Difficulty = 'easy' | 'medium' | 'hard';
+const DIFFICULTIES: Difficulty[] = ['easy', 'medium', 'hard'];
+
+// Older stored challenges have no embedding; they're backfilled lazily on first duplicate check.
+const EMBEDDINGS_KEY = 'meta:question_embeddings'; // hash: date -> embedding vector
+const EMBEDDING_DIMENSIONS = 512;
+// Cosine similarity at/above which two questions count as the same problem reworded.
+// Tune against real data: raise it if fresh questions get rejected, lower it if rewordings slip through.
+const SIMILARITY_THRESHOLD = 0.8;
+
 // ChallengeData interface remains the same
 export interface ChallengeData {
   id: string;
   date: string; // YYYY-MM-DD
-  difficulty: 'medium';
+  difficulty: Difficulty;
   question: string;
   questionTitle: string;
   inputOutput: {
@@ -65,24 +75,65 @@ async function generateContentHash(content: string): Promise<string> {
 }
 
 
+function embeddingText(c: { questionTitle: string; question: string }): string {
+  return `${c.questionTitle}
+${c.question}`;
+}
+
+const embeddingModel = () => openai.textEmbeddingModel('text-embedding-3-small');
+const embeddingOptions = { openai: { dimensions: EMBEDDING_DIMENSIONS } };
+
+// Returns the most similar previously-stored question (date + score), embedding and storing any
+// legacy challenges that don't have a vector yet.
+async function findMostSimilar(
+  embedding: number[]
+): Promise<{ date: string; score: number } | null> {
+  const stored = (await kv.hgetall<Record<string, number[]>>(EMBEDDINGS_KEY)) ?? {};
+  const dates = (await kv.smembers('meta:available_challenge_dates')) as string[];
+  const missing = dates.filter((d) => !stored[d]);
+
+  if (missing.length > 0) {
+    const challenges = await Promise.all(missing.map((d) => kv.get<ChallengeData>(`challenge:${d}`)));
+    const backfillable = challenges.filter((c): c is ChallengeData => !!c?.question);
+    if (backfillable.length > 0) {
+      const { embeddings } = await embedMany({
+        model: embeddingModel(),
+        values: backfillable.map(embeddingText),
+        providerOptions: embeddingOptions,
+      });
+      const toStore: Record<string, number[]> = {};
+      backfillable.forEach((c, i) => { toStore[c.date] = embeddings[i]; stored[c.date] = embeddings[i]; });
+      await kv.hset(EMBEDDINGS_KEY, toStore);
+    }
+  }
+
+  let best: { date: string; score: number } | null = null;
+  for (const [date, vec] of Object.entries(stored)) {
+    const score = cosineSimilarity(embedding, vec);
+    if (!best || score > best.score) best = { date, score };
+  }
+  return best;
+}
+
 // Refactored OpenAI fetch logic into its own function for retries
 async function fetchAndValidateChallengeFromOpenAI(
   date: string,
+  difficulty: Difficulty,
   attempt: number = 1
-): Promise<ChallengeData | 'duplicate_detected' | 'unsafe_solution_pattern' | null> {
+): Promise<{ challenge: ChallengeData; embedding: number[] | null } | 'duplicate_detected' | 'unsafe_solution_pattern' | null> {
   if (!process.env.OPENAI_API_KEY) {
     console.error("OPENAI_API_KEY environment variable not set.");
     return null;
   }
 
-  console.log(`Requesting challenge data from OpenAI for date: ${date} (Attempt: ${attempt})`);
+  console.log(`Requesting challenge data from OpenAI for date: ${date} (Attempt: ${attempt}, difficulty: ${difficulty})`);
 
   try {
     const { object: parsedData } = await generateObject({
       model: openai('gpt-5-mini'),
       schema: challengeSchema,
-      system: `You are an assistant that generates daily Python coding challenges (difficulty: medium) about lists or strings. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. The 'solution' MUST be a single self-contained 'solve' function that takes its input ONLY through its parameters (matching 'solutionHeader' exactly) and returns its answer with a 'return' statement. NEVER read input via input(), sys.stdin, or any other stdin/console mechanism, and NEVER include an 'if __name__ == "__main__":' block or any top-level code that calls 'solve' itself — the caller invokes 'solve' directly with already-parsed arguments. This rule applies no matter how algorithmically involved the problem is (e.g. dynamic programming, graphs, backtracking) — do not fall back to a stdin/stdout competitive-programming script style for harder problems. Provide exactly 5 distinct 'testCases', ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'. ${attempt > 1 ? 'IMPORTANT: Please generate a substantially DIFFERENT challenge than any previous attempt for this date.' : ''}`,
-      prompt: `Generate the Python coding challenge for the date: ${date}. Provide 5 distinct test cases in addition to the main example.`,
+      system: `You are an assistant that generates daily Python coding challenges (difficulty: ${difficulty}) about lists or strings. The 'solutionHeader' must accurately define the function signature used in the 'solution'. Always use standard Python type hints. For lists use list[type], for dictionaries use dict[key_type, value_type]. Do NOT use capitalized List, Dict, etc. The 'solution' MUST be a single self-contained 'solve' function that takes its input ONLY through its parameters (matching 'solutionHeader' exactly) and returns its answer with a 'return' statement. NEVER read input via input(), sys.stdin, or any other stdin/console mechanism, and NEVER include an 'if __name__ == "__main__":' block or any top-level code that calls 'solve' itself — the caller invokes 'solve' directly with already-parsed arguments. This rule applies no matter how algorithmically involved the problem is (e.g. dynamic programming, graphs, backtracking) — do not fall back to a stdin/stdout competitive-programming script style for harder problems. Provide exactly 5 distinct 'testCases', ensuring inputs and outputs are valid Python literal representations where applicable (e.g., lists, strings, numbers). The main 'inputOutput' example should be different from the 'testCases'. ${attempt > 1 ? 'IMPORTANT: Please generate a substantially DIFFERENT challenge than any previous attempt for this date.' : ''}`,
+      prompt: `Generate the ${difficulty}-difficulty Python coding challenge for the date: ${date}. Provide 5 distinct test cases in addition to the main example.`,
       // gpt-5-mini doesn't support `temperature`; retry variation comes from the
       // "generate a substantially different challenge" instruction in the system prompt.
       // reasoning_effort is kept low since this is a straightforward structured-output
@@ -102,32 +153,45 @@ async function fetchAndValidateChallengeFromOpenAI(
         return 'unsafe_solution_pattern';
     }
 
-    // Check for duplicate hash BEFORE forming the full ChallengeData object to save a bit of work
+    // Exact-match hash check first (free), then a semantic check to catch reworded repeats.
     const questionHashesSetKey = 'meta:question_hashes';
-    const normalizedNewQuestion = normalizeQuestionText(parsedData.question);
-    const newQuestionHash = await generateContentHash(normalizedNewQuestion); // Await the hash generation
+    const newQuestionHash = await generateContentHash(normalizeQuestionText(parsedData.question));
 
     try {
-        const isDuplicateHash = await kv.sismember(questionHashesSetKey, newQuestionHash);
-        if (isDuplicateHash) {
-            console.warn(`Potential duplicate question detected via hash ${newQuestionHash} for date ${date} (Attempt ${attempt}). Question: "${parsedData.questionTitle}"`);
-            return 'duplicate_detected'; // Special return value
+        if (await kv.sismember(questionHashesSetKey, newQuestionHash)) {
+            console.warn(`Duplicate question (exact hash ${newQuestionHash}) for date ${date} (Attempt ${attempt}). Question: "${parsedData.questionTitle}"`);
+            return 'duplicate_detected';
         }
     } catch (kvError) {
         console.error(`Error checking for duplicate hash in KV for date ${date} (Attempt ${attempt}):`, kvError);
-        // Decide behavior: proceed or fail? For now, let's proceed cautiously if KV check fails.
+    }
+
+    let embedding: number[] | null = null;
+    try {
+        ({ embedding } = await embed({
+            model: embeddingModel(),
+            value: embeddingText(parsedData),
+            providerOptions: embeddingOptions,
+        }));
+        const nearest = await findMostSimilar(embedding);
+        if (nearest && nearest.score >= SIMILARITY_THRESHOLD) {
+            console.warn(`Semantic duplicate of ${nearest.date} (similarity ${nearest.score.toFixed(3)}) for date ${date} (Attempt ${attempt}). Question: "${parsedData.questionTitle}"`);
+            return 'duplicate_detected';
+        }
+    } catch (embedError) {
+        console.error(`Semantic duplicate check failed for date ${date} (Attempt ${attempt}); proceeding without it:`, embedError);
     }
 
     // If not a duplicate and passes validation, construct the full object
     const challengeDataFromOpenAI: ChallengeData = {
-        id: date, date: date, difficulty: 'medium',
+        id: date, date: date, difficulty,
         question: parsedData.question, questionTitle: parsedData.questionTitle,
         inputOutput: { input: parsedData.inputOutput.input, output: parsedData.inputOutput.output },
         solutionHeader: parsedData.solutionHeader, solution: parsedData.solution,
         explanation: parsedData.explanation,
         testCases: parsedData.testCases,
     };
-    return challengeDataFromOpenAI;
+    return { challenge: challengeDataFromOpenAI, embedding };
 
   } catch (error) {
     if (NoObjectGeneratedError.isInstance(error)) {
@@ -162,11 +226,13 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
   }
 
   // 2. Not in cache, try to fetch from OpenAI (with retry logic for duplicates)
-  let fetchedChallenge: ChallengeData | 'duplicate_detected' | 'unsafe_solution_pattern' | null = null;
-  const maxAttempts = 2; // Initial attempt + 1 retry
+  // Difficulty is picked once per date so retries stay at the same level.
+  const difficulty = DIFFICULTIES[Math.floor(Math.random() * DIFFICULTIES.length)];
+  let fetchedChallenge: { challenge: ChallengeData; embedding: number[] | null } | 'duplicate_detected' | 'unsafe_solution_pattern' | null = null;
+  const maxAttempts = 3; // Initial attempt + 2 retries (the semantic check rejects more than the exact hash did)
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    fetchedChallenge = await fetchAndValidateChallengeFromOpenAI(date, attempt);
+    fetchedChallenge = await fetchAndValidateChallengeFromOpenAI(date, difficulty, attempt);
 
     if (fetchedChallenge === 'duplicate_detected' || fetchedChallenge === 'unsafe_solution_pattern') {
       if (attempt < maxAttempts) {
@@ -194,7 +260,7 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
 
   // 3. If successful fetch (and not a duplicate after retries)
   if (fetchedChallenge && typeof fetchedChallenge === 'object') {
-    const challengeToStore = fetchedChallenge as ChallengeData; // Type assertion
+    const { challenge: challengeToStore, embedding } = fetchedChallenge;
     console.log(`Successfully fetched unique challenge for ${date}. Storing...`);
     try {
       // We need the hash again for storing, or pass it down from fetchAndValidateChallengeFromOpenAI
@@ -204,6 +270,7 @@ export async function getChallengeDataForDate(date: string): Promise<ChallengeDa
       await kv.set(cacheKey, challengeToStore);
       await kv.sadd(availableDatesSetKey, date);
       await kv.sadd(questionHashesSetKey, finalHash); // Store the hash of the successfully stored question
+      if (embedding) await kv.hset(EMBEDDINGS_KEY, { [date]: embedding });
       console.log(`Stored challenge for ${date} in KV. Hash: ${finalHash}`);
       return challengeToStore;
     } catch (kvError) {
