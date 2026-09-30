@@ -44,7 +44,7 @@ const Header: React.FC<{ title: string }> = ({ title }) => {
               </DialogHeader>
               <p>pyassistant is a daily coding game that tests your python skills. The coding assistant has the given question in its context so it can give you general tips and code snippets if you're in any trouble. It also has the ability to analyze your code by clicking the purple button and typing in your question. </p>
               <p>The questions are fetched from ChatGPT every 24 hours. They are randomly determined to be either easy, medium or hard.</p>
-              <p>You can find my other projects on my <a href='https://cab.computer'>personal website</a></p>
+              <p>You can find my other projects on my <a href='https://cab.computer' className="underline decoration-sky-400 decoration-2 underline-offset-4">personal website</a></p>
             </DialogContent>
           </Dialog>
         </div>
